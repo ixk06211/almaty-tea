@@ -167,7 +167,7 @@
       <span class="mark" aria-hidden="true">茶</span>
       <div class="bt">
         <h1>阿拉木图 · 奶茶店选址调研工具包</h1>
-        <p class="sub">版本 v1.8 · 离线可用，建议加到手机主屏</p>
+        <p class="sub">版本 v1.9 · 离线可用，建议加到手机主屏</p>
       </div>
       <span class="sitechip" id="siteChip" title="当前点位">—</span>
     </div>
@@ -341,7 +341,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <footer>数据先存在这台设备，有网时自动同步到云端 Google 表格 · 版本 v1.8</footer>
+  <footer>数据先存在这台设备，有网时自动同步到云端 Google 表格 · 版本 v1.9</footer>
 </div>
 <script>
 (function(){
@@ -1141,19 +1141,19 @@
   function pullFromCloud(){
     if (CLOUD.mode === "off" || !CLOUD.url) { alert('云端还没配置。'); return; }
     updateDataStat("正在从云端拉取…");
-    var cbName = "atmPull" + Date.now().toString(36);
+    var base = CLOUD.url + (CLOUD.url.indexOf("?") < 0 ? "?" : "&");
+    var url = base + "action=pull&token=" + encodeURIComponent(CLOUD.token);
     var finished = false;
-    var sc = null;
-    function cleanup(){
-      if (sc && sc.parentNode) { sc.parentNode.removeChild(sc); }
-      try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
-    }
-    window[cbName] = function(data){
+
+    function handle(data){
       if (finished) { return; }
       finished = true;
-      cleanup();
       if (!data || !data.ok) {
         updateDataStat("拉取失败：" + ((data && data.error) || "云端返回异常"));
+        return;
+      }
+      if (!data.records) {
+        updateDataStat("拉取失败：云端脚本还是第一版（没有拉取功能）。请在 Apps Script 里重新部署新版本后再试。");
         return;
       }
       var recs = data.records || [];
@@ -1161,24 +1161,66 @@
       updateDataStat("已从云端拉取 " + recs.length + " 条，其中新增 " + r.samples + " 条" +
         (r.sites ? ("、" + r.sites + " 个点位") : "") + "。本地现有 " + samples.length + " 条。");
       toast("云端拉取完成：新增 " + r.samples + " 条");
-    };
-    sc = document.createElement("script");
-    sc.src = CLOUD.url + (CLOUD.url.indexOf("?") < 0 ? "?" : "&") +
-             "action=pull&token=" + encodeURIComponent(CLOUD.token) +
-             "&callback=" + cbName + "&_=" + Date.now();
-    sc.onerror = function(){
+    }
+    function fail(msg){
       if (finished) { return; }
       finished = true;
-      cleanup();
-      updateDataStat("拉取失败：网络不通或云端地址有误。");
-    };
-    setTimeout(function(){
-      if (finished) { return; }
-      finished = true;
-      cleanup();
-      updateDataStat("拉取超时（15 秒），检查网络后重试。");
-    }, 15000);
-    document.body.appendChild(sc);
+      updateDataStat("拉取失败：" + msg);
+    }
+
+    /* 备用通道：JSONP（不受跨域限制，能读到数据但读不到错误码） */
+    function tryJsonp(reason){
+      var cbName = "atmPull" + Date.now().toString(36);
+      var sc = document.createElement("script");
+      var cleaned = false;
+      function cleanup(){
+        if (sc.parentNode) { sc.parentNode.removeChild(sc); }
+        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+      }
+      window[cbName] = function(data){
+        if (cleaned) { return; }
+        cleaned = true;
+        cleanup();
+        handle(data);
+      };
+      sc.onerror = function(){
+        if (cleaned) { return; }
+        cleaned = true;
+        cleanup();
+        fail("云端地址打不开（" + reason + "）");
+      };
+      sc.src = url + "&callback=" + cbName + "&_=" + Date.now();
+      document.body.appendChild(sc);
+      setTimeout(function(){
+        if (cleaned) { return; }
+        cleaned = true;
+        cleanup();
+        fail("等不到云端回应（" + reason + "）");
+      }, 13000);
+    }
+
+    /* 首选 fetch：能拿到 HTTP 状态码，出问题时报得清楚 */
+    if (typeof fetch === "function") {
+      var fetchErr = "";
+      fetch(url, { method: "GET" })
+        .then(function(r){
+          if (!r.ok) { fetchErr = "HTTP " + r.status; throw new Error(fetchErr); }
+          return r.text();
+        })
+        .then(function(txt){
+          var data = null;
+          try { data = JSON.parse(txt); } catch (e) {
+            throw new Error("返回的不是数据（可能是登录页）");
+          }
+          handle(data);
+        })
+        .catch(function(err){
+          if (finished) { return; }
+          tryJsonp(String(fetchErr || (err && err.message) || err));
+        });
+    } else {
+      tryJsonp("浏览器不支持 fetch");
+    }
   }
 
   function postToCloud(body, cb){
