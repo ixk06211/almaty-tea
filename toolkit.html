@@ -167,7 +167,7 @@
       <span class="mark" aria-hidden="true">茶</span>
       <div class="bt">
         <h1>阿拉木图 · 奶茶店选址调研工具包</h1>
-        <p class="sub">版本 v2.8 · 离线可用，建议加到手机主屏</p>
+        <p class="sub">版本 v3.3 · 离线可用，建议加到手机主屏</p>
       </div>
       <span class="sitechip" id="siteChip" title="当前点位">—</span>
     </div>
@@ -254,10 +254,21 @@
         <button type="button" class="btn" id="btnSync">同步到云端</button>
         <button type="button" class="btn" id="btnPull">从云端拉取</button>
       </div>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="btn" id="btnCloudView">查看云端数据</button>
+        <button type="button" class="btn" id="btnCsv">导出 Excel 表格</button>
+      </div>
       <textarea id="dataBox" placeholder="点「导出数据」：这里会生成一段文字，全选复制就能发到微信保存；收到同事发来的文字，粘到这里再点「导入并合并」，两份记录就会合到一起。" style="margin-top:10px;min-height:92px"></textarea>
       <p class="hint" id="cloudState">云端同步：尚未配置。</p>
       <p class="hint">说明：记录会先存在这台设备，有网时自动同步到云端。<b>换手机、清缓存、用无痕模式都会让本机这份消失</b>，所以换设备之前先点一次「同步到云端」，或者收工前点「导出数据」留个底。</p>
       <p class="hint">换了新手机？打开页面后点一次 <b>「从云端拉取」</b>，以前的数据就会回到这台设备上；也可以用它把同事测的记录合到你这台机器上。</p>
+    </div>
+
+    <div class="card" id="cloudViewCard" hidden>
+      <h2>云端数据（只读）</h2>
+      <p class="hint">这是云端当前存着的全部数据，<b>不会改动你本机的记录</b>。想合到本机，用上面的「从云端拉取」。</p>
+      <div id="cloudViewBody"></div>
+      <button type="button" class="btn" id="btnCloudClose" style="margin-top:12px">收起</button>
     </div>
 
   </section>
@@ -341,7 +352,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <footer>数据先存在这台设备，有网时自动同步到云端 · 版本 v2.8</footer>
+  <footer>数据先存在这台设备，有网时自动同步到云端 · 版本 v3.3</footer>
 </div>
 <script>
 (function(){
@@ -664,6 +675,7 @@
   /* ---------- ① 计数器与计时 ---------- */
   var eff = 0, all = 0, t0 = 0, tickId = null, samples = [];
   var pendingDeletes = [];   /* 本机删掉、云端还没删掉的记录 key（断网时先记着，有网自动补删） */
+  var deletedKeys = [];      /* 本机删过的所有记录 key：从云端拉取时跳过它们，避免"删了又回来" */
 
   function renderCount(){ $('cEff').textContent = eff; $('cAll').textContent = all; }
 
@@ -931,11 +943,15 @@
           }
         }
         if (removed) {
-          pendingDeletes.push((removed.siteId || "") + "|" + (removed.ts || ""));
+          var dk = (removed.siteId || "") + "|" + (removed.ts || "");
+          pendingDeletes.push(dk);
+          rememberDeleted(dk);
           toast("已删除，正在同步删除云端…");
-          flushDeletes(function(err, n){
-            if (err) { updateDataStat("本地已删除；云端暂时没删掉（可能没网），有网时会自动补删。"); return; }
-            if (n) { toast("本地和云端都已删除"); }
+          flushDeletes(function(err, n, failN, why){
+            if (err) { updateDataStat("本地已删除；云端删除失败：" + err + "（有网时会自动重试）"); return; }
+            if (n && !failN) { toast("本地和云端都已删除"); }
+            else if (failN) { updateDataStat("本地已删除，但云端没删掉：" + why + "（下次同步会自动重试）"); }
+            else { toast("本地已删除（云端会自动重试）"); }
           });
         }
         renderSamples();
@@ -1091,6 +1107,13 @@
     return false;
   }
 
+  /* 记住"本机删过这条"，以后从云端拉取时跳过，避免删了又回来 */
+  function rememberDeleted(key){
+    if (!key || deletedKeys.indexOf(key) >= 0) { return; }
+    deletedKeys.push(key);
+    if (deletedKeys.length > 3000) { deletedKeys = deletedKeys.slice(-2000); }
+  }
+
   /* 把一份数据（同事发来的文字 / 云端拉取）合并进本机，重复的自动跳过 */
   function mergePayload(obj, fromCloud){
     var incoming = obj.samples || [];
@@ -1129,6 +1152,7 @@
         r.siteId = match.id;
       }
       if (isDuplicate(r)) { continue; }
+      if (deletedKeys.indexOf((r.siteId || "") + "|" + (r.ts || "")) >= 0) { continue; }   /* 本机删过的，不要复活 */
       if (fromCloud) { r.synced = true; }   /* 从云端拉回来的，不用再传上去 */
       samples.push(r);
       added++;
@@ -1313,6 +1337,48 @@
     };
   }
 
+  /* 点位资料（名称、评分、租金）也传到云端，方便在云端看到每个点位的情况 */
+  function tcbDocSite(s){
+    return {
+      type: "site",
+      key: "site|" + s.id,
+      siteId: s.id,
+      site: s.name || "",
+      scores: s.scores || {},
+      rentM: (typeof s.rentM === "number") ? s.rentM : 0,
+      revM: (typeof s.revM === "number") ? s.revM : 0,
+      updatedAt: Date.now()
+    };
+  }
+
+  /* 上传点位资料：同一个点位先删旧的那条，再写新的（避免重复） */
+  function tcbSyncSites(cb){
+    if (!sites.length) { if (cb) { cb(null, 0, 0); } return; }
+    var col = tcbDb.collection(CLOUD.collection);
+    var i = 0, okN = 0, failN = 0, firstErr = "";
+    var step = function(){
+      if (i >= sites.length) { if (cb) { cb(null, okN, failN, firstErr); } return; }
+      var doc = tcbDocSite(sites[i++]);
+      col.where({ key: doc.key }).get()
+        .then(function(res){
+          var list = (res && res.data) ? res.data : [];
+          var idx = 0;
+          var afterClean = function(){
+            col.add(doc)
+              .then(function(){ okN++; step(); })
+              .catch(function(e){ failN++; if (!firstErr) { firstErr = errText(e); } step(); });
+          };
+          var cleanNext = function(){
+            if (idx >= list.length) { afterClean(); return; }
+            col.doc(list[idx++]._id).remove().then(cleanNext).catch(cleanNext);
+          };
+          cleanNext();
+        })
+        .catch(function(e){ failN++; if (!firstErr) { firstErr = errText(e); } step(); });
+    };
+    step();
+  }
+
   /* 上传：先查已有哪些 key（去重），再分批写入，写完才回报成功 */
   function tcbSync(pend, cb){
     tcbInit(function(err){
@@ -1329,10 +1395,16 @@
           if (existing[docs[j].key]) { continue; }
           todo.push(docs[j]);
         }
-        if (!todo.length) { cb(null, 0, docs.length); return; }
+        if (!todo.length) {
+          tcbSyncSites(function(){ cb(null, 0, docs.length); });
+          return;
+        }
         var idx = 0, added = 0;
         var step = function(){
-          if (idx >= todo.length) { cb(null, added, docs.length - todo.length); return; }
+          if (idx >= todo.length) {
+            tcbSyncSites(function(){ cb(null, added, docs.length - todo.length); });
+            return;
+          }
           var chunk = todo.slice(idx, idx + 10);
           idx += 10;
           var p;
@@ -1340,7 +1412,7 @@
             p = (chunk.length === 1) ? col.add(chunk[0]) : col.add(chunk);
           } catch (e) { cb("写入失败：" + ((e && e.message) || e)); return; }
           p.then(function(){ added += chunk.length; step(); })
-           .catch(function(e){ cb("写入失败：" + ((e && e.message) || e)); });
+           .catch(function(e){ cb("写入失败：" + errText(e)); });
         };
         step();
       };
@@ -1360,19 +1432,45 @@
     });
   }
 
+  /* 把错误对象转成看得懂的文字 */
+  function errText(e){
+    if (!e) { return "未知错误"; }
+    var p = [];
+    if (e.message) { p.push(e.message); }
+    if (e.code) { p.push("code=" + e.code); }
+    if (e.msg) { p.push(e.msg); }
+    if (!p.length) {
+      try { p.push(JSON.stringify(e)); } catch (x) { p.push(String(e)); }
+    }
+    return p.join(" / ");
+  }
+
   /* 删除云端记录：按 key 删，重复删也没关系 */
   function cloudDeleteKeys(keys, cb){
-    if (!keys.length || CLOUD.mode !== "tcb") { if (cb) { cb(null, 0, 0); } return; }
+    if (!keys.length || CLOUD.mode !== "tcb") { if (cb) { cb(null, 0, 0, ""); } return; }
     tcbInit(function(err){
       if (err) { if (cb) { cb(err); } return; }
       var col = tcbDb.collection(CLOUD.collection);
-      var i = 0, okN = 0, failN = 0;
+      var i = 0, okN = 0, failN = 0, firstErr = "";
       var step = function(){
-        if (i >= keys.length) { if (cb) { cb(null, okN, failN); } return; }
+        if (i >= keys.length) { if (cb) { cb(null, okN, failN, firstErr); } return; }
         var k = keys[i++];
-        col.where({ key: k }).remove()
-          .then(function(){ okN++; step(); })
-          .catch(function(){ failN++; step(); });
+        /* 先按 key 找到云端文档，再按文档 ID 逐条删除（比批量删更稳） */
+        col.where({ key: k }).get()
+          .then(function(res){
+            var list = (res && res.data) ? res.data : [];
+            if (!list.length) { okN++; step(); return; }   /* 云端本来就没有，视为已删 */
+            var idx = 0;
+            var delNext = function(){
+              if (idx >= list.length) { okN++; step(); return; }
+              var doc = list[idx++];
+              col.doc(doc._id).remove()
+                .then(delNext)
+                .catch(function(e){ failN++; if (!firstErr) { firstErr = errText(e); } delNext(); });
+            };
+            delNext();
+          })
+          .catch(function(e){ failN++; if (!firstErr) { firstErr = errText(e); } step(); });
       };
       step();
     });
@@ -1385,13 +1483,13 @@
       return;
     }
     var keys = pendingDeletes.slice();
-    cloudDeleteKeys(keys, function(err, okN, failN){
+    cloudDeleteKeys(keys, function(err, okN, failN, firstErr){
       if (err) { if (cb) { cb(err); } return; }
       if (okN > 0) {
         pendingDeletes = (failN > 0) ? keys.slice() : [];   /* 有失败就留着下次再试 */
         save();
       }
-      if (cb) { cb(null, okN); }
+      if (cb) { cb(null, okN, failN, firstErr); }
     });
   }
 
@@ -1491,6 +1589,17 @@
     var pend = [];
     for (var i = 0; i < samples.length; i++) { if (!samples[i].synced) { pend.push(samples[i]); } }
     if (!pend.length) {
+      if (CLOUD.mode === "tcb" && cloudReady()) {
+        /* 没有新记录，但顺手把点位评分/租金这些资料更新到云端 */
+        flushDeletes(function(){
+          tcbSyncSites(function(err, okN){
+            if (silent) { return; }
+            if (err) { updateDataStat("点位资料上传失败：" + err); return; }
+            updateDataStat("没有新记录要传；已更新云端点位资料（" + (okN || 0) + " 个）。");
+          });
+        });
+        return;
+      }
       if (!silent) { alert('没有需要同步的新记录。'); }
       return;
     }
@@ -1577,7 +1686,9 @@
       var kept = [];
       for (var j = 0; j < samples.length; j++) {
         if (samples[j].siteId === s.id) {
-          pendingDeletes.push((samples[j].siteId || "") + "|" + (samples[j].ts || ""));   /* 云端也删 */
+          var sk = (samples[j].siteId || "") + "|" + (samples[j].ts || "");
+          pendingDeletes.push(sk);   /* 云端也删 */
+          rememberDeleted(sk);
         } else {
           kept.push(samples[j]);
         }
@@ -1609,7 +1720,139 @@
     });
   }
 
-  /* ---------- 本地保存 ---------- */
+  /* ---------- 导出 Excel 表格（CSV） ---------- */
+  function csvCell(v){
+    var s = (v === null || v === undefined) ? "" : String(v);
+    if (s.indexOf('"') >= 0) { s = s.replace(/"/g, '""'); }
+    if (s.indexOf(",") >= 0 || s.indexOf('"') >= 0 || s.indexOf("\n") >= 0) { s = '"' + s + '"'; }
+    return s;
+  }
+  function exportCsv(){
+    if (!samples.length) { alert('还没有记录可以导出。'); return; }
+    var head = ['点位', '日期', '时间', '时长(分钟)', '有效人流', '干扰流量', '折算/小时', '纬度', '经度', '定位精度(米)', '时段说明'];
+    var lines = [head.join(',')];
+    var sorted = samples.slice().sort(function(a, b){ return (a.ts || 0) - (b.ts || 0); });
+    var nameOf = {};
+    for (var q = 0; q < sites.length; q++) { nameOf[sites[q].id] = sites[q].name || ""; }
+    for (var i = 0; i < sorted.length; i++) {
+      var s = sorted[i];
+      var perHour = (s.mins > 0) ? Math.round(s.eff / s.mins * 60) : "";
+      lines.push([
+        csvCell(s.site || nameOf[s.siteId] || ""),
+        csvCell(s.date || ""),
+        csvCell(s.clock || ""),
+        csvCell(s.mins || ""),
+        csvCell(s.eff || 0),
+        csvCell(s.all || 0),
+        csvCell(perHour),
+        csvCell(typeof s.lat === "number" ? s.lat.toFixed(6) : ""),
+        csvCell(typeof s.lon === "number" ? s.lon.toFixed(6) : ""),
+        csvCell(typeof s.acc === "number" ? Math.round(s.acc) : ""),
+        csvCell(s.note || "")
+      ].join(','));
+    }
+    var csv = "\ufeff" + lines.join("\r\n");   /* 开头的 BOM 让 Excel 正确识别中文 */
+    try {
+      var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = "tea-survey-" + dateStamp() + ".csv";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); if (a.parentNode) { a.parentNode.removeChild(a); } }, 1500);
+      updateDataStat("已导出 Excel 表格（" + sorted.length + " 条），文件在浏览器的下载里。");
+      toast("已导出 Excel 表格");
+    } catch (e) {
+      updateDataStat("导出表格失败：" + ((e && e.message) || e) + "。可以在电脑上试，或先用「导出数据」备份。");
+    }
+  }
+  if ($('btnCsv')) { $('btnCsv').addEventListener('click', exportCsv); }
+
+  /* ---------- 查看云端数据（只读，不改本机） ---------- */
+  function viewCloudData(){
+    if (!cloudReady()) { alert('云端还没配置好。'); return; }
+    if (CLOUD.mode !== "tcb") { alert('「查看云端数据」目前只支持腾讯云模式。'); return; }
+    updateDataStat("正在读取云端数据…");
+    tcbPull(function(err, list){
+      if (err) { updateDataStat("读取云端失败：" + err); return; }
+      renderCloudView(list || []);
+      updateDataStat("已读取云端数据。");
+    });
+  }
+
+  function renderCloudView(list){
+    var recs = [], cSites = [];
+    for (var i = 0; i < list.length; i++) {
+      var d = list[i];
+      if (d.type === "site" || (d.key && String(d.key).indexOf("site|") === 0)) { cSites.push(d); }
+      else { recs.push(d); }
+    }
+    var html = '<p class="hint">云端共有 <b>' + recs.length + '</b> 条记录、<b>' + cSites.length + '</b> 个点位资料。</p>';
+
+    var bySite = {}, order = [];
+    for (var j = 0; j < recs.length; j++) {
+      var r = recs[j];
+      var key = r.site || r.siteId || "(未命名)";
+      if (!bySite[key]) { bySite[key] = { n: 0, peak: 0, dates: {} }; order.push(key); }
+      bySite[key].n++;
+      var ph = (r.mins > 0) ? Math.round(r.eff / r.mins * 60) : 0;
+      if (ph > bySite[key].peak) { bySite[key].peak = ph; }
+      if (r.date) { bySite[key].dates[r.date] = 1; }
+    }
+    if (order.length) {
+      html += '<div class="tablewrap"><table><thead><tr><th>点位</th><th>记录数</th><th>最高/小时</th><th>测过的日期</th></tr></thead><tbody>';
+      for (var k = 0; k < order.length; k++) {
+        var nm = order[k], g = bySite[nm];
+        var ds = [];
+        for (var dd in g.dates) { if (g.dates.hasOwnProperty(dd)) { ds.push(dd); } }
+        ds.sort();
+        html += '<tr><td>' + esc(nm) + '</td><td>' + g.n + '</td><td><b>' + g.peak + '</b></td><td>' + esc(ds.join('、')) + '</td></tr>';
+      }
+      html += '</tbody></table></div>';
+    }
+
+    if (cSites.length) {
+      html += '<h3 style="margin-top:16px">云端记录的点位评分</h3><div class="tablewrap"><table><thead><tr><th>点位</th><th>评分</th><th>月租金</th><th>预估月营业额</th></tr></thead><tbody>';
+      for (var m = 0; m < cSites.length; m++) {
+        var cs = cSites[m];
+        var sc = 0;
+        if (cs.scores) {
+          for (var c2 = 0; c2 < CRIT.length; c2++) {
+            var v = cs.scores[CRIT[c2].k];
+            if (typeof v === "number") { sc += v / 10 * CRIT[c2].w; }
+          }
+        }
+        html += '<tr><td>' + esc(cs.site || '') + '</td><td><b>' + sc.toFixed(1) + '</b></td><td>' +
+                esc(cs.rentM ? fmt(cs.rentM) : '') + '</td><td>' + esc(cs.revM ? fmt(cs.revM) : '') + '</td></tr>';
+      }
+      html += '</tbody></table></div>';
+    }
+
+    if (recs.length) {
+      var show = recs.slice(0, 200);
+      html += '<h3 style="margin-top:16px">明细（' +
+              (recs.length > 200 ? '只显示前 200 条 / 共 ' + recs.length + ' 条' : '共 ' + recs.length + ' 条') +
+              '）</h3>';
+      html += '<div class="tablewrap"><table><thead><tr><th>点位</th><th>日期</th><th>时间</th><th>有效</th><th>折算/小时</th></tr></thead><tbody>';
+      for (var n = 0; n < show.length; n++) {
+        var rr = show[n];
+        var ph2 = (rr.mins > 0) ? Math.round(rr.eff / rr.mins * 60) : 0;
+        html += '<tr><td>' + esc(rr.site || '') + '</td><td>' + esc(rr.date || '') + '</td><td>' + esc(rr.clock || '') +
+                '</td><td>' + (rr.eff || 0) + '</td><td>' + ph2 + '</td></tr>';
+      }
+      html += '</tbody></table></div>';
+    }
+    if (!recs.length && !cSites.length) { html += '<p class="hint">云端还是空的——先记录一条，再点「同步到云端」。</p>'; }
+
+    $('cloudViewBody').innerHTML = html;
+    $('cloudViewCard').hidden = false;
+    try { $('cloudViewCard').scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+  }
+  if ($('btnCloudView')) { $('btnCloudView').addEventListener('click', viewCloudData); }
+  if ($('btnCloudClose')) {
+    $('btnCloudClose').addEventListener('click', function(){ $('cloudViewCard').hidden = true; });
+  }
+
   /* ---------- 提示条 ---------- */
   var toastTimer = null;
   function toast(msg){
@@ -1656,6 +1899,7 @@
       }
       data.samples = samples;
       data.pendingDeletes = pendingDeletes;
+      data.deletedKeys = deletedKeys;
       localStorage.setItem(KEY, JSON.stringify(data));
     } catch (e) {
       var st = $('photoState');
@@ -1692,6 +1936,7 @@
     }
     if (data && data.samples) { samples = data.samples; }
     if (data && data.pendingDeletes) { pendingDeletes = data.pendingDeletes; }
+    if (data && data.deletedKeys) { deletedKeys = data.deletedKeys; }
   }
 
   renderCount();
@@ -1702,6 +1947,11 @@
   renderSamples();
   updateDataStat();
   updateAll();
+
+  /* 之前没删成功的云端记录，打开页面后自动补删一次 */
+  if (pendingDeletes.length) {
+    setTimeout(function(){ flushDeletes(function(){ updateDataStat(); }); }, 3000);
+  }
 })();
 </script>
 </body>
