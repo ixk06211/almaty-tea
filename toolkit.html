@@ -167,7 +167,7 @@
       <span class="mark" aria-hidden="true">茶</span>
       <div class="bt">
         <h1>阿拉木图 · 奶茶店选址调研工具包</h1>
-        <p class="sub">版本 v2.0 · 离线可用，建议加到手机主屏</p>
+        <p class="sub">版本 v2.2 · 离线可用，建议加到手机主屏</p>
       </div>
       <span class="sitechip" id="siteChip" title="当前点位">—</span>
     </div>
@@ -341,7 +341,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <footer>数据先存在这台设备，有网时自动同步到云端 Google 表格 · 版本 v2.0</footer>
+  <footer>数据先存在这台设备，有网时自动同步到云端 · 版本 v2.2</footer>
 </div>
 <script>
 (function(){
@@ -355,8 +355,10 @@
      如果哪天要停用云端，把 mode 改回 "off" 即可（记录仍然存在本机）。
      ============================================================ */
   var CLOUD = {
-    mode: "gas",
+    mode: "tcb",          /* "off" = 关闭 | "gas" = Google 表格 | "tcb" = 腾讯云开发 */
     url: "https://script.google.com/macros/s/AKfycbzDZLEOvhnxW7Pbj5aWL1AmZiQ8FYoK-H4J1T62M083OkvqFLgq04URFkOVfRoN6J1h/exec",
+    env: "xz213-d9gjf1n760b424648",   /* 腾讯云开发环境 ID */
+    collection: "records",
     key: "",
     token: "almaty2026"
   };
@@ -877,7 +879,7 @@
     $('clock').textContent = "00:00";
     renderSamples();
     updateAll();
-    if (CLOUD.mode !== "off" && navigator.onLine) { syncNow(true); }
+    if (cloudReady() && navigator.onLine) { syncNow(true); }
     toast("已记录 " + rec.clock + " · 有效 " + rec.eff + " 人 · 本点位共 " + countSiteSamples() + " 条");
   }
 
@@ -1028,11 +1030,17 @@
     if (el) { el.textContent = msg || ("本地已有 " + samples.length + " 条记录，其中待同步 " + pendingCount() + " 条"); }
     var cs = $('cloudState');
     if (!cs) { return; }
-    if (CLOUD.mode === "off" || !CLOUD.url) {
+    if (!cloudReady()) {
       cs.textContent = "云端同步：尚未配置。数据目前只保存在这台设备上，请每天点一次「导出数据」留底。";
     } else {
-      cs.textContent = "云端同步：已配置（" + (CLOUD.mode === "gas" ? "Google 表格" : "REST 接口") + "），待同步 " + pendingCount() + " 条。";
+      cs.textContent = "云端同步：已配置（" + (CLOUD.mode === "tcb" ? "腾讯云开发" : "Google 表格") + "），待同步 " + pendingCount() + " 条。";
     }
+  }
+
+  function cloudReady(){
+    if (CLOUD.mode === "tcb") { return !!CLOUD.env; }
+    if (CLOUD.mode === "gas") { return !!CLOUD.url; }
+    return false;
   }
 
   function stripSitePhotos(s){
@@ -1139,30 +1147,184 @@
 
   /* 从云端把记录拉回本机（换了新手机、或者想看同事测的数据时用） */
   function pullFromCloud(){
-    if (CLOUD.mode === "off" || !CLOUD.url) { alert('云端还没配置。'); return; }
+    if (!cloudReady()) { alert('云端还没配置好。'); return; }
     updateDataStat("正在从云端拉取…");
-    var url = CLOUD.url + (CLOUD.url.indexOf("?") < 0 ? "?" : "&") +
-              "type=frame&action=pull&token=" + encodeURIComponent(CLOUD.token) + "&_=" + Date.now();
-    expectCloud(function(reached, data){
-      if (!reached) {
-        updateDataStat("拉取失败：没等到云端回应（网络或代理挡住了）。到阿拉木图用当地网络通常就没问题。");
-        return;
-      }
-      if (!data.ok) {
-        updateDataStat("拉取失败：" + (data.error || "云端返回异常"));
-        return;
-      }
-      if (!data.records) {
-        updateDataStat("拉取失败：云端脚本不是最新版（缺少拉取功能），需要重新部署脚本。");
-        return;
-      }
-      var recs = data.records;
+
+    var finish = function(err, recs){
+      if (err) { updateDataStat("拉取失败：" + err); return; }
       var r = mergePayload({ sites: [], samples: recs }, true);
       updateDataStat("已从云端拉取 " + recs.length + " 条，其中新增 " + r.samples + " 条" +
         (r.sites ? ("、" + r.sites + " 个点位") : "") + "。本地现有 " + samples.length + " 条。");
       toast("云端拉取完成：新增 " + r.samples + " 条");
+    };
+
+    if (CLOUD.mode === "tcb") {
+      tcbPull(function(err, list){
+        if (err) { finish(err); return; }
+        var recs = [];
+        for (var i = 0; i < list.length; i++) {
+          var d = list[i];
+          var o = {
+            siteId: d.siteId || "", site: d.site || "", date: d.date || "", clock: d.clock || "",
+            mins: d.mins || 0, eff: d.eff || 0, all: d.all || 0, note: d.note || "", ts: d.ts || 0
+          };
+          if (typeof d.lat === "number") { o.lat = d.lat; }
+          if (typeof d.lon === "number") { o.lon = d.lon; }
+          if (typeof d.acc === "number") { o.acc = d.acc; }
+          recs.push(o);
+        }
+        finish(null, recs);
+      });
+      return;
+    }
+
+    var url = CLOUD.url + (CLOUD.url.indexOf("?") < 0 ? "?" : "&") +
+              "type=frame&action=pull&token=" + encodeURIComponent(CLOUD.token) + "&_=" + Date.now();
+    expectCloud(function(reached, data){
+      if (!reached) {
+        finish("没等到云端回应（网络或代理挡住了）");
+        return;
+      }
+      if (!data.ok) {
+        finish(data.error || "云端返回异常");
+        return;
+      }
+      if (!data.records) {
+        finish("云端脚本不是最新版（缺少拉取功能）");
+        return;
+      }
+      finish(null, data.records);
     });
     cloudFrame().src = url;
+  }
+
+  /* ---------- 腾讯云开发（国内直连，不需要代理） ---------- */
+  var TCB_SDK = "https://imgcache.qq.com/qcloud/cloudbase-js-sdk/1.7.2/cloudbase.full.js";
+  var tcbApp = null, tcbDb = null;
+
+  function loadCloudbase(cb){
+    if (window.cloudbase) { cb(true); return; }
+    var s = document.createElement("script");
+    s.src = TCB_SDK;
+    s.onload = function(){ cb(!!window.cloudbase); };
+    s.onerror = function(){ cb(false); };
+    document.head.appendChild(s);
+  }
+
+  /* 初始化 + 匿名登录（匿名登录需要在腾讯云控制台里开启） */
+  function tcbInit(cb){
+    if (tcbDb) { cb(null); return; }
+    loadCloudbase(function(ok){
+      if (!ok) { cb("没能加载腾讯云 SDK（检查一下网络）"); return; }
+      try {
+        tcbApp = cloudbase.init({ env: CLOUD.env });
+      } catch (e) {
+        cb("初始化失败：" + ((e && e.message) || e));
+        return;
+      }
+      var done = function(err){
+        if (err) { cb("匿名登录失败：" + ((err && err.message) || err)); return; }
+        try { tcbDb = tcbApp.database(); } catch (e2) { cb("打开数据库失败：" + e2.message); return; }
+        cb(null);
+      };
+      try {
+        var auth = tcbApp.auth({ persistence: "local" });
+        if (auth && auth.signInAnonymously) {
+          auth.signInAnonymously().then(function(){ done(null); }).catch(done);
+          return;
+        }
+        if (auth && auth.anonymousAuthProvider) {
+          auth.anonymousAuthProvider().signIn().then(function(){ done(null); }).catch(done);
+          return;
+        }
+      } catch (e) { /* 有些环境不登录也能写，继续 */ }
+      done(null);
+    });
+  }
+
+  function tcbDoc(s){
+    return {
+      key: (s.siteId || "") + "|" + (s.ts || ""),
+      siteId: s.siteId || "",
+      site: s.site || "",
+      date: s.date || "",
+      clock: s.clock || "",
+      mins: s.mins || 0,
+      eff: s.eff || 0,
+      all: s.all || 0,
+      lat: (typeof s.lat === "number") ? s.lat : null,
+      lon: (typeof s.lon === "number") ? s.lon : null,
+      acc: (typeof s.acc === "number") ? s.acc : null,
+      note: s.note || "",
+      ts: s.ts || 0
+    };
+  }
+
+  /* 上传：先查已有哪些 key（去重），再分批写入，写完才回报成功 */
+  function tcbSync(pend, cb){
+    tcbInit(function(err){
+      if (err) { cb(err); return; }
+      var col = tcbDb.collection(CLOUD.collection);
+      var docs = [];
+      for (var i = 0; i < pend.length; i++) { docs.push(tcbDoc(pend[i])); }
+      var keys = [];
+      for (var k = 0; k < docs.length; k++) { keys.push(docs[k].key); }
+
+      var go = function(existing){
+        var todo = [];
+        for (var j = 0; j < docs.length; j++) {
+          if (existing[docs[j].key]) { continue; }
+          todo.push(docs[j]);
+        }
+        if (!todo.length) { cb(null, 0, docs.length); return; }
+        var idx = 0, added = 0;
+        var step = function(){
+          if (idx >= todo.length) { cb(null, added, docs.length - todo.length); return; }
+          var chunk = todo.slice(idx, idx + 10);
+          idx += 10;
+          var p;
+          try {
+            p = (chunk.length === 1) ? col.add(chunk[0]) : col.add(chunk);
+          } catch (e) { cb("写入失败：" + ((e && e.message) || e)); return; }
+          p.then(function(){ added += chunk.length; step(); })
+           .catch(function(e){ cb("写入失败：" + ((e && e.message) || e)); });
+        };
+        step();
+      };
+
+      /* 查询已有 key：失败也不挡上传，只是不去重 */
+      try {
+        var _ = tcbDb.command;
+        col.where({ key: _.in(keys.slice(0, 100)) }).field({ key: true }).limit(1000).get()
+          .then(function(res){
+            var ex = {};
+            var list = (res && res.data) ? res.data : [];
+            for (var m = 0; m < list.length; m++) { if (list[m].key) { ex[list[m].key] = 1; } }
+            go(ex);
+          })
+          .catch(function(){ go({}); });
+      } catch (e) { go({}); }
+    });
+  }
+
+  /* 拉取：一次最多 100 条，最多取 500 条 */
+  function tcbPull(cb){
+    tcbInit(function(err){
+      if (err) { cb(err); return; }
+      var col = tcbDb.collection(CLOUD.collection);
+      var all = [];
+      var page = function(skip){
+        col.orderBy("ts", "asc").skip(skip).limit(100).get()
+          .then(function(res){
+            var list = (res && res.data) ? res.data : [];
+            for (var i = 0; i < list.length; i++) { all.push(list[i]); }
+            if (list.length === 100 && all.length < 500) { page(skip + 100); }
+            else { cb(null, all); }
+          })
+          .catch(function(e){ cb("读取失败：" + ((e && e.message) || e)); });
+      };
+      page(0);
+    });
   }
 
   /* ---------- 云端通道：隐藏 iframe + 表单提交 ----------
@@ -1234,8 +1396,8 @@
   }
 
   function syncNow(silent){
-    if (CLOUD.mode === "off" || !CLOUD.url) {
-      if (!silent) { alert('云端还没配置。等 Google 表格部署好、把网址填进来就生效——数据现在都存在这台设备上，不会丢。'); }
+    if (!cloudReady()) {
+      if (!silent) { alert('云端还没配置好。数据现在都存在这台设备上，不会丢。'); }
       return;
     }
     var pend = [];
@@ -1244,25 +1406,42 @@
       if (!silent) { alert('没有需要同步的新记录。'); }
       return;
     }
+    if (!silent) { updateDataStat("正在同步 " + pend.length + " 条…"); }
+
+    var finish = function(ok, added, skipped, total, errMsg){
+      if (ok) {
+        for (var j = 0; j < pend.length; j++) { pend[j].synced = true; }
+        save();
+        updateDataStat("同步成功（云端已确认）：本次写入 " + added + " 条" +
+          (skipped ? ("，跳过重复 " + skipped + " 条") : "") +
+          (typeof total === "number" ? ("，云端共 " + total + " 条。") : "。"));
+        toast("云端已确认写入 " + added + " 条");
+      } else {
+        updateDataStat("同步失败：" + (errMsg || "没收到云端确认") + "。记录仍留在手机上，有网时再点一次。");
+      }
+    };
+
+    if (CLOUD.mode === "tcb") {
+      tcbSync(pend, function(err, added, skipped){
+        if (err) { finish(false, 0, 0, null, err); return; }
+        finish(true, added || 0, skipped || 0, null, null);
+      });
+      return;
+    }
+
     var payload = {
       token: CLOUD.token,
       site: $('siteName') ? $('siteName').value : "",
       exportedAt: new Date().toISOString(),
       records: pend
     };
-    if (!silent) { updateDataStat("正在同步 " + pend.length + " 条…"); }
     postToCloud(JSON.stringify(payload), function(reached, res){
       if (reached && res && res.ok) {
-        for (var j = 0; j < pend.length; j++) { pend[j].synced = true; }
-        save();
-        updateDataStat("同步成功（云端已确认）：本次写入 " + (res.added || 0) + " 条" +
-          (res.skipped ? ("，跳过重复 " + res.skipped + " 条") : "") +
-          "，表格里共 " + (res.total || 0) + " 条。");
-        toast("云端已确认写入 " + (res.added || 0) + " 条");
+        finish(true, res.added || 0, res.skipped || 0, res.total, null);
       } else if (reached) {
-        updateDataStat("云端拒绝写入：" + ((res && res.error) || "未知原因") + "。记录仍在手机上。");
+        finish(false, 0, 0, null, (res && res.error) || "云端拒绝写入");
       } else {
-        updateDataStat("没收到云端确认（可能网络不稳）。记录仍留在手机上，有网时再点一次「同步到云端」。");
+        finish(false, 0, 0, null, "没收到云端确认（网络或代理挡住了）");
       }
     });
   }
@@ -1273,7 +1452,7 @@
   if ($('btnPull')) { $('btnPull').addEventListener('click', pullFromCloud); }
 
   window.addEventListener('online', function(){
-    if (CLOUD.mode !== "off" && pendingCount()) { syncNow(true); }
+    if (cloudReady() && pendingCount()) { syncNow(true); }
   });
 
   /* ---------- 点位与照片的交互 ---------- */
