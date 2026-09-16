@@ -6,100 +6,188 @@
 <title>阿拉木图奶茶店 · 选址调研工具包</title>
 <style>
   :root{
-    --bg:#f7f5f1; --panel:#ffffff; --ink:#1c1a17; --ink-2:#5d574f; --line:#e3ded6;
-    --brand:#1f4d3f; --brand-2:#2f6b57; --warn:#a8620b; --danger:#9c2b2b; --ok:#1f6b3a;
-    --chip:#efeae2; --radius:10px;
+    --bg:#f3f0ea; --bg-2:#faf8f5; --bar:rgba(243,240,234,.9); --panel:#ffffff;
+    --ink:#171c19; --ink-2:#6c726c; --ink-3:#989e97; --line:#e6e1d8;
+    --brand:#1e5a45; --brand-2:#2e7a5d; --brand-soft:#e7f0eb;
+    --warn:#986a14; --danger:#a13535; --ok:#1d6b41;
+    --chip:#eeeae2; --radius:14px; --radius-sm:10px;
+    --shadow:0 1px 2px rgba(23,28,25,.05), 0 12px 28px -24px rgba(23,28,25,.5);
+    --ring:0 0 0 3px rgba(46,122,93,.16);
   }
   @media (prefers-color-scheme: dark){
-    :root{ --bg:#141513; --panel:#1c1e1c; --ink:#eceae5; --ink-2:#a9a49b; --line:#2e312d;
-           --brand:#7fc2a5; --brand-2:#5fa387; --warn:#e0a54a; --danger:#e08a8a; --ok:#7fc79a; --chip:#252824; }
+    :root{
+      --bg:#0f1211; --bg-2:#141817; --bar:rgba(15,18,17,.9); --panel:#171b19;
+      --ink:#e9ece8; --ink-2:#a2a9a2; --ink-3:#7d857e; --line:#252b27;
+      --brand:#79c1a1; --brand-2:#96d3b7; --brand-soft:#1a2620;
+      --warn:#dfa94e; --danger:#e09292; --ok:#7cc79b;
+      --chip:#212622;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 28px -24px rgba(0,0,0,.9);
+      --ring:0 0 0 3px rgba(121,193,161,.2);
+    }
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
-  body{margin:0; background:var(--bg); color:var(--ink);
+  html, body{touch-action:manipulation}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0; color:var(--ink); background:var(--bg);
+    background-image:radial-gradient(120% 55% at 50% 0%, rgba(46,122,93,.07), transparent 62%);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
-    font-size:15px; line-height:1.6}
-  .wrap{max-width:760px; margin:0 auto; padding:14px 14px 60px}
-  header.top{padding:6px 2px 12px}
-  header.top h1{font-size:19px; margin:0 0 4px; letter-spacing:.3px}
-  header.top p{margin:0; color:var(--ink-2); font-size:12.5px}
-  nav.tabs{display:flex; gap:6px; overflow-x:auto; padding:4px 2px 10px; position:sticky; top:0;
-    background:var(--bg); z-index:5; -webkit-overflow-scrolling:touch}
-  nav.tabs button{flex:0 0 auto; border:1px solid var(--line); background:var(--panel); color:var(--ink-2);
-    padding:8px 12px; border-radius:999px; font-size:13.5px; font-family:inherit}
-  nav.tabs button.on{background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600}
+    font-size:15.5px; line-height:1.65; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px; margin:0 auto; padding:0 14px 64px}
+  header.top{padding:22px 2px 14px}
+  header.top .brand{display:flex; align-items:center; gap:12px}
+  header.top .mark{flex:0 0 32px; width:32px; height:32px; border-radius:10px; display:flex; align-items:center;
+    justify-content:center; font-size:15px; font-weight:600; color:#fff;
+    background:linear-gradient(140deg,var(--brand-2),var(--brand)); box-shadow:0 10px 18px -14px var(--brand)}
+  header.top .bt{flex:1 1 auto; min-width:0}
+  header.top h1{font-size:16px; margin:0; font-weight:600; letter-spacing:.2px; line-height:1.35}
+  header.top .sub{margin:3px 0 0; color:var(--ink-3); font-size:11.5px}
+  .sitechip{flex:0 0 auto; max-width:38%; font-size:11.5px; font-weight:500; color:var(--brand);
+    background:var(--brand-soft); padding:6px 10px; border-radius:999px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  nav.tabs{display:flex; gap:8px; overflow-x:auto; position:sticky; top:0; z-index:5;
+    margin:0 -14px 14px; padding:10px 14px; border-bottom:1px solid var(--line);
+    background:var(--bar); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    -webkit-overflow-scrolling:touch; scrollbar-width:none}
+  nav.tabs::-webkit-scrollbar{display:none}
+  nav.tabs button{flex:0 0 auto; border:1px solid transparent; background:transparent; color:var(--ink-2);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; font-family:inherit; font-weight:500}
+  nav.tabs button.on{background:linear-gradient(180deg,var(--brand-2),var(--brand)); color:#fff;
+    border-color:transparent; font-weight:600; box-shadow:0 8px 16px -12px var(--brand)}
   section.panel{display:none}
   section.panel.on{display:block}
-  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin:0 0 12px}
-  .card h2{font-size:15px; margin:0 0 10px; letter-spacing:.2px}
-  .hint{color:var(--ink-2); font-size:12.5px; margin:6px 0 0}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px; margin:0 0 14px; box-shadow:var(--shadow)}
+  .card h2{font-size:15px; margin:0 0 12px; font-weight:600; letter-spacing:.2px}
+  .card h2::before{content:""; display:inline-block; width:5px; height:14px; border-radius:3px; margin-right:9px;
+    vertical-align:-2px; background:linear-gradient(180deg,var(--brand-2),var(--brand))}
+  .hint{color:var(--ink-2); font-size:12.5px; margin:8px 0 0; line-height:1.7}
   .row{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
   .row > .fld{flex:1 1 140px; min-width:120px}
   .fld{display:block; margin:0 0 10px}
-  .fld span{display:block; font-size:12.5px; color:var(--ink-2); margin-bottom:4px}
-  input[type=number],input[type=text],textarea{
-    width:100%; padding:10px; border:1px solid var(--line); border-radius:8px;
-    background:var(--bg); color:var(--ink); font-size:16px; font-family:inherit}
+  .fld span{display:block; font-size:12.5px; color:var(--ink-2); margin-bottom:6px}
+  input[type=number],input[type=text],select,textarea{
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:var(--radius-sm);
+    background:var(--bg-2); color:var(--ink); font-size:16px; font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--brand-2); box-shadow:var(--ring)}
   textarea{font-size:14px; line-height:1.7; min-height:120px}
-  input[type=range]{width:100%; accent-color:var(--brand-2); height:28px}
+  input[type=range]{width:100%; accent-color:var(--brand-2); height:30px}
   button{font-family:inherit; font-size:14px; cursor:pointer}
-  .btn{border:1px solid var(--line); background:var(--panel); color:var(--ink); padding:10px 14px; border-radius:8px}
-  .btn.pri{background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600}
-  .btn.block{width:100%; margin-top:6px}
-  .taprow{display:flex; gap:10px; margin:8px 0 4px}
-  .tap{flex:1; border:0; border-radius:12px; padding:20px 8px; font-size:15px; font-weight:600; color:#fff;
-    background:var(--brand); line-height:1.3}
-  .tap.alt{background:var(--ink-2)}
+  .btn{border:1px solid var(--line); background:var(--panel); color:var(--ink); padding:11px 15px;
+    border-radius:var(--radius-sm); font-weight:500}
+  .btn.pri{background:linear-gradient(180deg,var(--brand-2),var(--brand)); border-color:transparent;
+    color:#fff; font-weight:600; box-shadow:0 12px 22px -16px var(--brand)}
+  .btn.block{width:100%; margin-top:8px; padding:13px}
+  .taprow{display:flex; gap:12px; margin:10px 0 6px}
+  .tap{flex:1; border:0; border-radius:16px; padding:22px 8px; font-size:15px; font-weight:600; color:#fff;
+    background:linear-gradient(160deg,var(--brand-2),var(--brand)); line-height:1.3;
+    box-shadow:0 16px 28px -20px var(--brand)}
+  .tap.alt{background:var(--chip); color:var(--ink-2); box-shadow:none}
+  .tap.alt b{color:var(--ink)}
   .tap:active{transform:scale(.985)}
-  .tap b{display:block; font-size:30px; letter-spacing:.5px; font-weight:700; font-variant-numeric:tabular-nums}
+  .tap b{display:block; font-size:32px; letter-spacing:.5px; font-weight:700; font-variant-numeric:tabular-nums}
   .tap span{font-size:12px; opacity:.88; font-weight:400}
-  .timer{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:2px 0 8px}
-  .timer .clock{font-variant-numeric:tabular-nums; font-size:26px; font-weight:600; letter-spacing:1px; min-width:96px}
+  .tap, .tap b, .tap span{-webkit-user-select:none; user-select:none}
+  button, .btn, label.btn, .chk, .thumb button, .del, a.card{transition:transform .1s ease, filter .1s ease}
+  button.pressed, .btn.pressed, label.btn.pressed, .chk.pressed, .thumb button.pressed, .del.pressed, a.card.pressed,
+  button:active, .btn:active, label.btn:active, .chk:active, .thumb button:active, .del:active, a.card:active{transform:scale(.955); filter:brightness(.88)}
+  @media (prefers-reduced-motion: reduce){
+    .pressed, button:active, .btn:active, label.btn:active, .chk:active, .thumb button:active, .del:active, a.card:active{transform:none; filter:brightness(.9)}
+  }
+  @media (prefers-color-scheme: dark){
+    .tap, .btn.pri, nav.tabs button.on, header.top .mark{color:#0e1210}
+    .tap.alt{color:var(--ink-2)}
+  }
+  .timer{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0 10px}
+  .timer .clock{font-variant-numeric:tabular-nums; font-size:28px; font-weight:600; letter-spacing:1px; min-width:100px}
+  .location{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:2px 0 10px}
+  .locstate{font-size:12.5px; color:var(--ink-2); flex:1 1 180px}
+  .locstate.ok{color:var(--ok)}
+  .locstate.warn{color:var(--warn)}
+  .maplink{font-size:11.5px; color:var(--brand-2); text-decoration:none; border-bottom:1px dotted currentColor}
+  .photoRow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0 0}
+  .photoRow label.btn{display:inline-block; margin:0}
+  .thumbs{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  .thumb{position:relative; width:82px; height:82px; border-radius:12px; overflow:hidden; border:1px solid var(--line); background:var(--bg-2)}
+  .thumb img{width:100%; height:100%; object-fit:cover; display:block}
+  .thumb button{position:absolute; top:3px; right:3px; border:0; background:rgba(0,0,0,.55); color:#fff;
+    font-size:11px; line-height:1; padding:3px 5px; border-radius:6px}
   .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:8px; margin-top:8px}
-  .kpi{background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px}
+  .kpi{background:var(--bg-2); border:1px solid var(--line); border-radius:var(--radius-sm); padding:11px}
   .kpi b{display:block; font-size:20px; font-variant-numeric:tabular-nums; letter-spacing:.3px}
   .kpi span{font-size:11.5px; color:var(--ink-2)}
-  table{width:100%; border-collapse:collapse; font-size:13px}
-  th,td{text-align:left; padding:7px 6px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums}
-  th{color:var(--ink-2); font-weight:500; font-size:12px}
+  .tablewrap{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -2px}
+  table{width:100%; min-width:330px; border-collapse:collapse; font-size:12.5px}
+  th,td{text-align:left; padding:9px 5px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; vertical-align:top}
+  th{color:var(--ink-3); font-weight:500; font-size:11.5px; letter-spacing:.3px}
+  tbody tr:last-child td{border-bottom:0}
   .del{border:0; background:transparent; color:var(--danger); font-size:12px; padding:4px}
-  .crit{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line)}
-  .crit .nm{flex:1 1 auto; font-size:13.5px}
-  .crit .nm i{display:block; font-style:normal; color:var(--ink-2); font-size:11.5px}
-  .crit input[type=range]{flex:0 0 116px; width:116px}
-  .crit .val{flex:0 0 34px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600}
-  .verdict{margin-top:10px; padding:10px 12px; border-radius:8px; font-size:13.5px; background:var(--chip); color:var(--ink)}
+  .crit{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line)}
+  .crit:last-child{border-bottom:0}
+  .crit .nm{flex:1 1 auto; min-width:0; font-size:13.5px}
+  .crit .nm i{display:block; font-style:normal; color:var(--ink-2); font-size:11.5px; line-height:1.5}
+  .crit input[type=range]{flex:0 0 112px; width:112px}
+  .crit .val{flex:0 0 30px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600}
+  .verdict{margin-top:12px; padding:12px 14px; border-radius:12px; font-size:13.5px;
+    background:var(--bg-2); border:1px solid var(--line); color:var(--ink)}
   .verdict.ok{color:var(--ok)} .verdict.warn{color:var(--warn)} .verdict.bad{color:var(--danger)}
-  .chk{display:flex; gap:9px; align-items:flex-start; padding:7px 0; border-bottom:1px dotted var(--line); font-size:13.5px}
-  .chk input{margin:3px 0 0; width:18px; height:18px; flex:0 0 18px; accent-color:var(--brand)}
-  pre.script{white-space:pre-wrap; word-break:break-word; background:var(--bg); border:1px solid var(--line);
-    border-radius:8px; padding:11px; font-size:12.5px; line-height:1.75; margin:6px 0 0;
+  .chk{display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px}
+  .chk:last-child{border-bottom:0}
+  .chk input{margin:2px 0 0; width:19px; height:19px; flex:0 0 19px; accent-color:var(--brand)}
+  pre.script{white-space:pre-wrap; word-break:break-word; background:var(--bg-2); border:1px solid var(--line);
+    border-radius:var(--radius-sm); padding:12px; font-size:12.5px; line-height:1.8; margin:8px 0 0;
     font-family:inherit}
-  .tag{display:inline-block; font-size:11px; padding:2px 7px; border-radius:999px; background:var(--chip); color:var(--ink-2); margin-left:6px}
-  .note{font-size:12px; color:var(--ink-2); border-left:3px solid var(--brand-2); padding:2px 0 2px 9px; margin:10px 0 0}
-  footer{color:var(--ink-2); font-size:11.5px; text-align:center; padding:18px 6px 0}
+  .tag{display:inline-block; font-size:11px; font-weight:500; padding:3px 9px; border-radius:999px;
+    background:var(--brand-soft); color:var(--brand); margin-left:8px}
+  .note{font-size:12px; color:var(--ink-2); border-left:3px solid var(--brand-2);
+    padding:4px 0 4px 10px; margin:12px 0 0; line-height:1.7}
+  footer{color:var(--ink-3); font-size:11.5px; text-align:center; padding:26px 8px 0; line-height:1.8}
   @media print{
-    nav.tabs,.taprow,.timer,.no-print{display:none !important}
-    body{background:#fff} section.panel{display:block !important}
-    .card{break-inside:avoid; box-shadow:none}
+    nav.tabs,.taprow,.timer,.no-print,header.top{display:none !important}
+    body{background:#fff; background-image:none}
+    section.panel{display:block !important}
+    .card{break-inside:avoid; box-shadow:none; border-color:#ddd}
   }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <h1>阿拉木图 · 高端奶茶店选址调研工具包</h1>
-    <p>离线可用，建议加到手机主屏。测算只是决策参考，最终以实地数据为准。</p>
+    <div class="brand">
+      <span class="mark" aria-hidden="true">茶</span>
+      <div class="bt">
+        <h1>阿拉木图 · 奶茶店选址调研工具包</h1>
+        <p class="sub">版本 v1.6 · 离线可用，建议加到手机主屏</p>
+      </div>
+      <span class="sitechip" id="siteChip" title="当前点位">—</span>
+    </div>
   </header>
 
   <nav class="tabs" id="tabs">
     <button type="button" class="on" data-tab="p1">① 人流实测</button>
     <button type="button" data-tab="p2">② 点位评分</button>
-    <button type="button" data-tab="p3">③ 盈利测算</button>
-    <button type="button" data-tab="p4">④ 现场检查</button>
-    <button type="button" data-tab="p5">⑤ 7天行动</button>
+    <button type="button" data-tab="p4">③ 现场检查</button>
+    <button type="button" data-tab="p5">④ 7天行动</button>
   </nav>
 
   <section class="panel on" id="p1">
+    <div class="card">
+      <h2>当前点位</h2>
+      <div class="row">
+        <label class="fld"><span>正在测哪个点位</span><select id="siteSel"></select></label>
+        <button type="button" class="btn" id="btnNewSite">新建点位</button>
+        <button type="button" class="btn" id="btnDelSite">删除当前点位</button>
+      </div>
+      <label class="fld"><span>点位名称 / 地址（记录和导出都按这个分）</span><input type="text" id="siteName" placeholder="如：Достык 附近，XX 商场 1 层"></label>
+      <div class="photoRow">
+        <label class="btn" for="photoInput">拍照 / 选照片</label>
+        <input type="file" id="photoInput" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;left:-9999px">
+        <span class="locstate" id="photoState">这个点位还没有照片</span>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+      <p class="hint">拍下门头、街景、周边，回来一眼就能对上数据。照片会自动压小存在本机（每个点位最多 8 张），导出时会一起带走。</p>
+      <p class="hint">下面两个标签页（人流实测、点位评分）都跟着这个点位走：切换点位后，样本、评分、租金各自独立。</p>
+    </div>
+
     <div class="card">
       <h2>现场计数</h2>
       <p class="hint">站定位置：从<b>拟开门面</b>看出去，只数“经过门口约 5 米范围、看起来 15–40 岁”的单个行人。车辆、外卖骑手、明显赶路的通勤者不算。</p>
@@ -113,45 +201,48 @@
         <button type="button" class="btn" id="btnStop">停止</button>
         <button type="button" class="btn" id="btnReset">清零</button>
       </div>
+      <div class="location">
+        <button type="button" class="btn" id="btnLoc">重新定位</button>
+        <span class="locstate" id="locState">正在自动获取定位…请在弹出的提示里点「允许」</span>
+      </div>
       <div class="row">
         <label class="fld"><span>本段时长（分钟，停止计时后自动填入）</span><input type="number" id="mins" value="15" step="0.5" min="0.5"></label>
         <label class="fld"><span>时段说明</span><input type="text" id="slotNote" placeholder="如：工作日 17:30 晴天"></label>
       </div>
+      <label class="fld"><span>这条记录算在哪个点位</span><select id="siteSel2"></select></label>
       <button type="button" class="btn pri block" id="btnSave">记录这段样本</button>
-      <p class="hint">标准做法：每段取 <b>15 分钟</b>，高峰时段取 2 段取平均。每个点位至少测 3 个工作日 + 2 个周末日。</p>
+      <p class="hint">标准做法：每段取 <b>15 分钟</b>，高峰时段取 2 段取平均。每个点位至少测 3 个工作日 + 2 个周末日。<br><b>位置是全自动的</b>：打开页面就开始定位，停留期间每 2 分钟自动刷新，你走到下一个点位不用做任何操作，记录样本时自动带上当时的坐标（纬度 / 经度 / 精度）。定位只存在你手机浏览器里，不会上传到任何服务器。</p>
     </div>
 
     <div class="card">
-      <h2>已记录样本</h2>
+      <h2>已记录样本<span class="tag" id="sampleSiteName">—</span></h2>
+      <div class="tablewrap">
       <table id="tbl">
         <thead><tr><th>时间</th><th>时长</th><th>有效</th><th>干扰</th><th>折算/小时</th><th></th></tr></thead>
         <tbody id="tbody"><tr><td colspan="6" style="color:var(--ink-2)">还没有样本</td></tr></tbody>
       </table>
+      </div>
     </div>
 
     <div class="card">
-      <h2>推算这个点位的天花板</h2>
-      <div class="row">
-        <label class="fld"><span>进店转化率 %（街铺 0.8–2，商场 2–5）</span><input type="number" id="cv" value="1.5" step="0.1"></label>
-        <label class="fld"><span>平均客单价 ₸</span><input type="number" id="aov" value="2200" step="100"></label>
-        <label class="fld"><span>外卖占比 %</span><input type="number" id="dlv" value="25" step="5"></label>
+      <h2>数据管理</h2>
+      <p class="hint" id="dataStat">本地已有 0 条记录</p>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="btn" id="btnExport">导出数据</button>
+        <button type="button" class="btn" id="btnImport">导入并合并</button>
+        <button type="button" class="btn" id="btnSync">同步到云端</button>
       </div>
-      <div class="kpis">
-        <div class="kpi"><span>高峰小时有效人流</span><b id="kPeak">—</b></div>
-        <div class="kpi"><span>全天有效人流估算</span><b id="kDay">—</b></div>
-        <div class="kpi"><span>预估日销量（杯）</span><b id="kCups">—</b></div>
-        <div class="kpi"><span>预估月营业额 ₸</span><b id="kRev">—</b></div>
-      </div>
-      <p class="hint">全天人流 = 各样本折算小时流量 × 该时段小时数（08–10、12–14、20–22 各按 2 小时，14–17、17–20 各按 3 小时，其余按 1 小时）。</p>
-      <div class="note">参考门槛：街铺高峰小时有效人流低于 150 人基本不考虑；300–600 人靠转化率取胜；800 人以上且目标客群过半才算优质点位。</div>
-      <button type="button" class="btn no-print" id="btnPrint1">打印 / 存 PDF</button>
+      <textarea id="dataBox" placeholder="点「导出数据」：这里会生成一段文字，全选复制就能发到微信保存；收到同事发来的文字，粘到这里再点「导入并合并」，两份记录就会合到一起。" style="margin-top:10px;min-height:92px"></textarea>
+      <p class="hint" id="cloudState">云端同步：尚未配置。</p>
+      <p class="hint">说明：数据默认只存在这台设备的浏览器里。换手机、清缓存、用无痕模式都会丢，所以<b>建议每天收工前点一次「导出数据」</b>，把文字发到自己的微信或收藏里。</p>
     </div>
+
   </section>
 
   <section class="panel" id="p2">
     <div class="card">
       <h2>候选点位评分表</h2>
-      <label class="fld"><span>点位名称 / 地址</span><input type="text" id="siteName" placeholder="如：Достык 附近，XX 商场 1 层"></label>
+      <p class="hint">正在评分的是：<b id="scoreSiteName">—</b>（在「① 人流实测」里切换或改名）</p>
       <div id="crits"></div>
       <div class="verdict" id="scoreOut">总分 —</div>
     </div>
@@ -159,7 +250,7 @@
       <h2>硬门槛：租金能不能撑住</h2>
       <div class="row">
         <label class="fld"><span>月租金 ₸（含物业费）</span><input type="number" id="rentM" value="500000" step="10000"></label>
-        <label class="fld"><span>预估月营业额 ₸（从①复制过来）</span><input type="number" id="revM" value="4000000" step="100000"></label>
+        <label class="fld"><span>预估月营业额 ₸（自己估一个数）</span><input type="number" id="revM" value="4000000" step="100000"></label>
       </div>
       <div class="verdict" id="rentOut">—</div>
       <p class="hint">茶饮店租金占比健康区间 10–15%，超过 20% 是红线。谈判前先算这一条。</p>
@@ -167,34 +258,6 @@
     <div class="card">
       <h2>决策口径</h2>
       <p class="hint">总分 ≥ 80 可做；70–79 必须先谈下租金或拿到免租期；低于 70 放弃。硬门槛不过关的点位，无论总分多少都放弃。</p>
-    </div>
-  </section>
-
-  <section class="panel" id="p3">
-    <div class="card">
-      <h2>单店盈利测算（₸ / 月）</h2>
-      <div class="row">
-        <label class="fld"><span>客单价 ₸</span><input type="number" id="b_aov" value="2200" step="100"></label>
-        <label class="fld"><span>日均杯数</span><input type="number" id="b_cups" value="180" step="10"></label>
-        <label class="fld"><span>食材成本率 %</span><input type="number" id="b_food" value="32" step="1"></label>
-      </div>
-      <div class="row">
-        <label class="fld"><span>月租金 ₸</span><input type="number" id="b_rent" value="500000" step="50000"></label>
-        <label class="fld"><span>人力总成本 ₸</span><input type="number" id="b_labor" value="700000" step="50000"></label>
-        <label class="fld"><span>其他固定成本 ₸（水电网/耗材/软件）</span><input type="number" id="b_other" value="250000" step="25000"></label>
-      </div>
-      <div class="row">
-        <label class="fld"><span>商场抽成 %（街铺填 0）</span><input type="number" id="b_pct" value="0" step="1"></label>
-        <label class="fld"><span>外卖占比 %</span><input type="number" id="b_drate" value="25" step="5"></label>
-        <label class="fld"><span>外卖平台佣金 %</span><input type="number" id="b_dcomm" value="18" step="1"></label>
-      </div>
-      <div class="row">
-        <label class="fld"><span>一次性投入 ₸（装修+设备+首批货+押金）</span><input type="number" id="b_capex" value="18000000" step="500000"></label>
-        <label class="fld"><span>开业营销预算 ₸</span><input type="number" id="b_mkt" value="800000" step="100000"></label>
-      </div>
-      <div class="kpis" id="bOut"></div>
-      <p class="hint">净利率低于 12% 说明撑不住高端定位；回本周期目标 18 个月以内，超过 24 个月风险偏高。</p>
-      <button type="button" class="btn no-print" id="btnPrint3">打印 / 存 PDF</button>
     </div>
   </section>
 
@@ -253,11 +316,26 @@
     </div>
   </section>
 
-  <footer>数据只保存在这台设备的浏览器里，换设备不会同步。</footer>
+  <footer>数据只保存在这台设备的浏览器里，换设备不会同步 · 版本 v1.6</footer>
 </div>
 <script>
 (function(){
   "use strict";
+
+  /* ============================================================
+     云端同步配置
+     等 Google 表格部署好之后，只要改下面几行：
+       mode 改成 "gas"（Google 表格）或 "rest"（Supabase 等 REST 接口）
+       url  填部署得到的网址
+       token 填和云端脚本里一致的约定口令
+     现在保持 "off"：数据只存本机，用「导出数据」手动备份。
+     ============================================================ */
+  var CLOUD = {
+    mode: "off",
+    url: "",
+    key: "",
+    token: ""
+  };
 
   var CRIT = [
     { k:'flow',   w:25, n:'有效人流强度', d:'高峰小时目标客群经过量，不是总人数' },
@@ -268,6 +346,183 @@
     { k:'rent',   w:15, n:'租金性价比',   d:'租金占预估营业额的比例，越低分越高' },
     { k:'hw',     w:5,  n:'硬件与合规',   d:'电容量、上下水、供暖、消防、门头审批' }
   ];
+
+  /* ---------- 点位（每个点位一套：名称 / 评分 / 租金 / 照片 / 样本） ---------- */
+  var sites = [];          /* [{ id, name, scores:{}, rentM, revM, photos:[], createdAt }] */
+  var currentSite = "";
+  var MAX_PHOTOS = 8;
+
+  function newId(){
+    return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+  function siteById(id){
+    for (var i = 0; i < sites.length; i++) { if (sites[i].id === id) { return sites[i]; } }
+    return null;
+  }
+  function currentSiteObj(){ return siteById(currentSite); }
+  function siteNameOf(s){ return (s && s.name) ? s.name : "未命名点位"; }
+
+  function createSite(name, silent){
+    var s = {
+      id: newId(),
+      name: name || ("点位 " + (sites.length + 1)),
+      scores: {},
+      rentM: 500000,
+      revM: 4000000,
+      photos: [],
+      createdAt: Date.now()
+    };
+    for (var i = 0; i < CRIT.length; i++) { s.scores[CRIT[i].k] = 5; }
+    sites.push(s);
+    if (!silent) { switchSite(s.id); }
+    return s;
+  }
+
+  function saveSiteFields(id){
+    var s = siteById(id);
+    if (!s) { return; }
+    if ($('siteName')) { s.name = $('siteName').value; }
+    for (var i = 0; i < CRIT.length; i++) {
+      var el = $('c_' + CRIT[i].k);
+      if (el) { s.scores[CRIT[i].k] = num(el.value, 5); }
+    }
+    s.rentM = num($('rentM').value, 0);
+    s.revM  = num($('revM').value, 0);
+  }
+
+  function loadSiteFields(id){
+    var s = siteById(id);
+    if (!s) { return; }
+    if ($('siteName')) { $('siteName').value = s.name || ""; }
+    for (var i = 0; i < CRIT.length; i++) {
+      var el = $('c_' + CRIT[i].k);
+      var v = (s.scores && typeof s.scores[CRIT[i].k] === "number") ? s.scores[CRIT[i].k] : 5;
+      if (el) { el.value = v; }
+      if ($('v_' + CRIT[i].k)) { $('v_' + CRIT[i].k).textContent = v; }
+    }
+    if ($('rentM')) { $('rentM').value = (typeof s.rentM === "number") ? s.rentM : 500000; }
+    if ($('revM'))  { $('revM').value  = (typeof s.revM  === "number") ? s.revM  : 4000000; }
+    if ($('scoreSiteName')) { $('scoreSiteName').textContent = siteNameOf(s); }
+    renderThumbs();
+  }
+
+  function renderSiteSelect(){
+    var html = "";
+    for (var i = 0; i < sites.length; i++) {
+      html += '<option value="' + sites[i].id + '">' + esc(siteNameOf(sites[i])) + '</option>';
+    }
+    var ids = ['siteSel', 'siteSel2'];
+    for (var k = 0; k < ids.length; k++) {
+      var sel = $(ids[k]);
+      if (!sel) { continue; }
+      sel.innerHTML = html;
+      sel.value = currentSite;
+    }
+    var chip = $('siteChip');
+    if (chip) { chip.textContent = siteNameOf(currentSiteObj()); }
+  }
+
+  function switchSite(id){
+    if (!siteById(id)) { return; }
+    if (id !== currentSite) { saveSiteFields(currentSite); }
+    currentSite = id;
+    loadSiteFields(currentSite);
+    renderSiteSelect();
+    renderSamples();
+    updateScore();
+    save();
+  }
+
+  function ensureSites(){
+    if (!sites.length) {
+      var nm = "点位 1";
+      var s = createSite(nm, true);
+      currentSite = s.id;
+    }
+    if (!siteById(currentSite)) { currentSite = sites[0].id; }
+    for (var i = 0; i < samples.length; i++) {
+      if (!samples[i].siteId || !siteById(samples[i].siteId)) {
+        samples[i].siteId = currentSite;
+      }
+    }
+    return currentSite;
+  }
+
+  /* ---------- 点位照片 ---------- */
+  function downscale(file, cb){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var raw = e.target.result;
+      var img = new Image();
+      img.onload = function(){
+        try {
+          var max = 720;
+          var sc = Math.min(1, max / Math.max(img.width, img.height));
+          var cv = document.createElement('canvas');
+          cv.width = Math.max(1, Math.round(img.width * sc));
+          cv.height = Math.max(1, Math.round(img.height * sc));
+          var ctx = cv.getContext('2d');
+          ctx.drawImage(img, 0, 0, cv.width, cv.height);
+          cb(cv.toDataURL("image/jpeg", 0.62));
+        } catch (err) { cb(raw); }
+      };
+      img.onerror = function(){ cb(raw); };
+      img.src = raw;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function renderThumbs(){
+    var box = $('thumbs');
+    if (!box) { return; }
+    var s = currentSiteObj();
+    var ps = (s && s.photos) ? s.photos : [];
+    var html = "";
+    for (var i = 0; i < ps.length; i++) {
+      html += '<div class="thumb"><img src="' + ps[i].dataUrl + '" alt="点位照片">' +
+              '<button type="button" data-pid="' + ps[i].id + '">×</button></div>';
+    }
+    box.innerHTML = html;
+    var btns = box.querySelectorAll('button');
+    for (var j = 0; j < btns.length; j++) {
+      btns[j].addEventListener('click', function(){
+        var ss = currentSiteObj();
+        if (!ss || !ss.photos) { return; }
+        var pid = this.getAttribute('data-pid');
+        for (var k = 0; k < ss.photos.length; k++) {
+          if (ss.photos[k].id === pid) { ss.photos.splice(k, 1); break; }
+        }
+        renderThumbs();
+        save();
+      });
+    }
+    var st = $('photoState');
+    if (st) {
+      st.textContent = ps.length
+        ? (ps.length + " 张照片 · 只存在这台设备，导出时一起带走")
+        : "这个点位还没有照片";
+    }
+  }
+
+  function addPhotoFiles(files){
+    var s = currentSiteObj();
+    if (!s) { return; }
+    if (!s.photos) { s.photos = []; }
+    var room = MAX_PHOTOS - s.photos.length;
+    if (room <= 0) { alert("这个点位的照片已经有 " + MAX_PHOTOS + " 张了。删掉几张再拍，或者新建一个点位。"); return; }
+    var list = [];
+    for (var i = 0; i < files.length && list.length < room; i++) { list.push(files[i]); }
+    var done = 0;
+    for (var j = 0; j < list.length; j++) {
+      (function(f){
+        downscale(f, function(dataUrl){
+          s.photos.push({ id: newId(), ts: Date.now(), dataUrl: dataUrl });
+          done++;
+          if (done === list.length) { renderThumbs(); save(); }
+        });
+      })(list[j]);
+    }
+  }
 
   var LIST = {
     chkA: [
@@ -358,8 +613,72 @@
   var eff = 0, all = 0, t0 = 0, tickId = null, samples = [];
 
   function renderCount(){ $('cEff').textContent = eff; $('cAll').textContent = all; }
-  $('tapEff').addEventListener('click', function(){ eff++; renderCount(); });
-  $('tapAll').addEventListener('click', function(){ all++; renderCount(); });
+
+  function popNumber(el){
+    if (!el) { return; }
+    if (el.animate) {
+      try {
+        el.animate([{ transform: "scale(1)" }, { transform: "scale(1.22)" }, { transform: "scale(1)" }],
+                   { duration: 150, easing: "ease-out" });
+      } catch (e) { /* 老浏览器忽略 */ }
+    }
+  }
+  function bindCounter(btnId, numId, inc){
+    var btn = $(btnId);
+    if (!btn) { return; }
+    var fire = function(){
+      inc();
+      renderCount();
+      popNumber($(numId));
+    };
+    if (window.PointerEvent) {
+      var dx0 = 0, dy0 = 0, moved = false;
+      btn.addEventListener("pointerdown", function(ev){
+        dx0 = ev.clientX; dy0 = ev.clientY; moved = false;
+      });
+      btn.addEventListener("pointermove", function(ev){
+        if (Math.abs(ev.clientX - dx0) > 12 || Math.abs(ev.clientY - dy0) > 12) { moved = true; }
+      });
+      btn.addEventListener("pointerup", function(ev){
+        if (ev.button === undefined || ev.button === 0) { if (!moved) { fire(); } }
+      });
+      btn.addEventListener("pointercancel", function(){ moved = true; });
+    } else {
+      btn.addEventListener("click", fire);
+    }
+  }
+  bindCounter("tapEff", "cEff", function(){ eff++; });
+  bindCounter("tapAll", "cAll", function(){ all++; });
+
+  /* ---------- 按下反馈：iPhone 上也生效（:active 在部分手机会失效） ---------- */
+  function pressTarget(node){
+    while (node && node !== document.body) {
+      if (node.tagName === "BUTTON" || node.tagName === "A" ||
+          (node.classList && (node.classList.contains("btn") || node.classList.contains("chk")))) {
+        return node;
+      }
+      node = node.parentNode;
+    }
+    return null;
+  }
+  function pressOn(ev){
+    var el = pressTarget(ev.target);
+    if (el && !el.disabled) { el.classList.add("pressed"); }
+  }
+  function pressOff(ev){
+    var el = pressTarget(ev.target);
+    if (el) { setTimeout(function(){ el.classList.remove("pressed"); }, 90); }
+  }
+  if (window.PointerEvent) {
+    document.addEventListener("pointerdown", pressOn, true);
+    document.addEventListener("pointerup", pressOff, true);
+    document.addEventListener("pointercancel", pressOff, true);
+  } else {
+    document.addEventListener("touchstart", pressOn, true);
+    document.addEventListener("touchend", pressOff, true);
+    document.addEventListener("mousedown", pressOn, true);
+    document.addEventListener("mouseup", pressOff, true);
+  }
 
   function clockText(sec){
     var m = Math.floor(sec / 60), s = Math.floor(sec % 60);
@@ -400,47 +719,156 @@
     return 1;
   }
 
-  $('btnSave').addEventListener('click', function(){
+  /* ---------- 定位（自动获取 + 自动刷新） ---------- */
+  var loc = null;            /* { lat, lon, acc, t } */
+  var locDenied = false;     /* 权限被拒就不再反复请求 */
+  var locTimer = null;
+  var LOC_TTL = 180000;      /* 3 分钟内的定位直接复用，记录时不再等待 */
+
+  function pad2(n){ return n < 10 ? "0" + n : "" + n; }
+
+  function setLocState(txt, cls){
+    var el = $('locState');
+    if (!el) { return; }
+    el.textContent = txt;
+    el.className = 'locstate' + (cls ? ' ' + cls : '');
+  }
+  function locLabel(l){
+    return l.lat.toFixed(5) + ", " + l.lon.toFixed(5) + "（±" + Math.round(l.acc || 0) + " 米）";
+  }
+  function mapLink(l){
+    return "https://www.google.com/maps?q=" + l.lat.toFixed(6) + "," + l.lon.toFixed(6);
+  }
+
+  function grabLocation(cb, silent){
+    if (locDenied) { if (cb) { cb(); } return; }
+    if (!navigator.geolocation) {
+      locDenied = true;
+      loc = null;
+      setLocState("这台设备或浏览器不支持定位，记录将不带位置", "warn");
+      if (cb) { cb(); }
+      return;
+    }
+    if (!silent) { setLocState("正在获取定位…手机上若弹出「是否允许获取位置」，请点允许"); }
+    navigator.geolocation.getCurrentPosition(function(pos){
+      loc = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        acc: pos.coords.accuracy || 0,
+        t: Date.now()
+      };
+      setLocState("已自动定位（后台持续刷新）：" + locLabel(loc), "ok");
+      if (cb) { cb(); }
+    }, function(err){
+      loc = null;
+      var msg = "暂时拿不到定位（室内或信号弱），会自动重试，记录仍可保存";
+      if (err && err.code === 1) {
+        locDenied = true;
+        msg = "定位权限被拒绝：点地址栏左侧的锁形图标 → 权限 → 位置 → 允许，然后点「重新定位」";
+        if (locTimer) { clearInterval(locTimer); locTimer = null; }
+      } else if (err && err.code === 3) {
+        msg = "定位超时（室内或信号弱），会自动重试";
+      }
+      setLocState(msg, "warn");
+      if (cb) { cb(); }
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+  }
+
+  function autoLocate(){
+    if (locDenied || document.hidden) { return; }
+    if (loc && (Date.now() - loc.t) < 90000) { return; }
+    grabLocation(null, true);
+  }
+
+  /* 打开页面 1 秒后自动定位；之后每 2 分钟自动刷新，走到下一个点位无需任何操作 */
+  setTimeout(autoLocate, 1000);
+  locTimer = setInterval(autoLocate, 120000);
+
+  /* 部分浏览器不允许刚打开页面就弹权限框，第一次点屏幕时补一次 */
+  document.addEventListener('click', function once(){
+    document.removeEventListener('click', once, false);
+    if (!loc && !locDenied) { grabLocation(null, true); }
+  }, false);
+
+  /* 从后台切回前台时立即刷新一次 */
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden) { autoLocate(); }
+  });
+
+  $('btnLoc').addEventListener('click', function(){
+    locDenied = false;
+    if (!locTimer) { locTimer = setInterval(autoLocate, 120000); }
+    grabLocation(null, false);
+  });
+
+  function doSave(){
     var mins = num($('mins').value, 0);
     if (mins <= 0) { alert('请先填写本段时长（分钟），或用计时器计时。'); return; }
     if (eff + all === 0) { alert('这一段还没有计数。'); return; }
     var d = new Date();
-    samples.push({
+    var rec = {
       clock: (d.getHours() < 10 ? "0" : "") + d.getHours() + ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes(),
+      date: d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()),
+      ts: d.getTime(),
       hour: d.getHours(),
       mins: mins,
       eff: eff,
       all: all,
-      note: $('slotNote').value
-    });
+      note: $('slotNote').value,
+      site: siteNameOf(currentSiteObj()),
+      siteId: currentSite
+    };
+    if (loc) { rec.lat = loc.lat; rec.lon = loc.lon; rec.acc = loc.acc; }
+    samples.push(rec);
     eff = 0; all = 0; t0 = 0;
     renderCount();
     $('slotNote').value = "";
     $('clock').textContent = "00:00";
     renderSamples();
     updateAll();
+    if (CLOUD.mode !== "off" && navigator.onLine) { syncNow(true); }
+  }
+
+  $('btnSave').addEventListener('click', function(){
+    if (loc && (Date.now() - loc.t) < LOC_TTL) { doSave(); return; }
+    grabLocation(doSave);
   });
 
   function renderSamples(){
     var tb = $('tbody');
-    if (!samples.length) {
-      tb.innerHTML = '<tr><td colspan="6" style="color:var(--ink-2)">还没有样本</td></tr>';
+    updateDataStat();
+    if ($('sampleSiteName')) { $('sampleSiteName').textContent = siteNameOf(currentSiteObj()); }
+    var mine = [];
+    for (var m = 0; m < samples.length; m++) {
+      if (samples[m].siteId === currentSite) { mine.push(samples[m]); }
+    }
+    if (!mine.length) {
+      tb.innerHTML = '<tr><td colspan="6" style="color:var(--ink-2)">这个点位还没有样本</td></tr>';
       return;
     }
     var html = "";
-    for (var i = 0; i < samples.length; i++) {
-      var s = samples[i];
+    for (var i = 0; i < mine.length; i++) {
+      var s = mine[i];
       var perHour = s.mins > 0 ? Math.round(s.eff / s.mins * 60) : 0;
-      html += "<tr><td>" + s.clock + (s.note ? "<br><span style='color:var(--ink-2);font-size:11.5px'>" + esc(s.note) + "</span>" : "") +
+      var locHtml = "";
+      if (typeof s.lat === "number" && typeof s.lon === "number") {
+        locHtml = "<br><a class='maplink' href='" + mapLink(s) + "' target='_blank' rel='noopener'>📍 " + locLabel(s) + "</a>";
+      } else {
+        locHtml = "<br><span style='color:var(--ink-2);font-size:11.5px'>未记录位置</span>";
+      }
+      html += "<tr><td>" + s.clock + (s.note ? "<br><span style='color:var(--ink-2);font-size:11.5px'>" + esc(s.note) + "</span>" : "") + locHtml +
               "</td><td>" + s.mins + "分</td><td><b>" + s.eff + "</b></td><td>" + s.all +
               "</td><td>" + perHour + "</td>" +
-              '<td><button type="button" class="del" data-i="' + i + '">删除</button></td></tr>';
+              '<td><button type="button" class="del" data-ts="' + s.ts + '">删除</button></td></tr>';
     }
     tb.innerHTML = html;
     var del = tb.querySelectorAll('.del');
     for (var j = 0; j < del.length; j++) {
       del[j].addEventListener('click', function(){
-        samples.splice(parseInt(this.getAttribute('data-i'), 10), 1);
+        var ts = parseInt(this.getAttribute('data-ts'), 10);
+        for (var k = 0; k < samples.length; k++) {
+          if (samples[k].ts === ts && samples[k].siteId === currentSite) { samples.splice(k, 1); break; }
+        }
         renderSamples();
         updateAll();
       });
@@ -503,47 +931,6 @@
     ro.textContent = t;
   }
 
-  /* ---------- ③ 盈利测算 ---------- */
-  function kpi(label, value, strong){
-    return '<div class="kpi"><span>' + label + '</span><b' +
-      (strong ? ' style="color:var(--brand)"' : '') + '>' + value + '</b></div>';
-  }
-
-  function updateBiz(){
-    var aov   = num($('b_aov').value, 0);
-    var cups  = num($('b_cups').value, 0);
-    var food  = num($('b_food').value, 0) / 100;
-    var rent  = num($('b_rent').value, 0);
-    var labor = num($('b_labor').value, 0);
-    var other = num($('b_other').value, 0);
-    var pc    = num($('b_pct').value, 0) / 100;
-    var dr    = num($('b_drate').value, 0) / 100;
-    var dc    = num($('b_dcomm').value, 0) / 100;
-    var capex = num($('b_capex').value, 0) + num($('b_mkt').value, 0);
-
-    var rev    = cups * aov * 30;
-    var gross  = rev * (1 - food);
-    var plat   = rev * dr * dc;
-    var turn   = rev * pc;
-    var fix    = rent + labor + other;
-    var profit = gross - plat - turn - fix;
-
-    var unit = aov * (1 - food - dr * dc - pc);
-    var be   = unit > 0 ? fix / (unit * 30) : Infinity;
-    var pb   = profit > 0 ? capex / profit : Infinity;
-
-    var html = "";
-    html += kpi("月营业额", fmt(rev));
-    html += kpi("毛利率", pct((1 - food) * 100));
-    html += kpi("月净利", fmt(profit), true);
-    html += kpi("净利率", rev > 0 ? pct(profit / rev * 100) : "—");
-    html += kpi("盈亏平衡日杯数", isFinite(be) ? Math.ceil(be) : "—");
-    html += kpi("回本周期", isFinite(pb) && pb > 0 ? (Math.round(pb * 10) / 10) + " 个月" : "—");
-    html += kpi("租金占比", rev > 0 ? pct(rent / rev * 100) : "—");
-    html += kpi("每杯贡献利润 ₸", fmt(unit));
-    $('bOut').innerHTML = html;
-  }
-
   /* ---------- ④ 清单 ---------- */
   (function buildLists(){
     for (var key in LIST) {
@@ -562,17 +949,7 @@
   })();
 
   function updateAll(){
-    var f = computeFoot();
-    var cv = num($('cv').value, 0) / 100;
-    var aov = num($('aov').value, 0);
-    var dlv = num($('dlv').value, 0) / 100;
-    var cups = f.day * cv * (1 + dlv);
-    $('kPeak').textContent = f.peak ? Math.round(f.peak) : "—";
-    $('kDay').textContent  = f.day ? Math.round(f.day) : "—";
-    $('kCups').textContent = f.day ? Math.round(cups) : "—";
-    $('kRev').textContent  = f.day ? fmt(cups * aov * 30) : "—";
     updateScore();
-    updateBiz();
     save();
   }
 
@@ -582,33 +959,252 @@
     inputs[q].addEventListener('change', updateAll);
   }
 
-  /* ---------- 打印 ---------- */
-  function printAll(){
-    var ps = document.querySelectorAll('section.panel'), prev = [];
-    for (var i = 0; i < ps.length; i++) {
-      prev.push(ps[i].classList.contains('on'));
-      ps[i].classList.add('on');
-    }
-    window.print();
-    for (var j = 0; j < ps.length; j++) { ps[j].classList.toggle('on', prev[j]); }
+  /* ---------- 数据管理：导出 / 导入合并 / 云端同步 ---------- */
+  function dateStamp(){
+    var d = new Date();
+    return d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + "-" + pad2(d.getHours()) + pad2(d.getMinutes());
   }
-  $('btnPrint1').addEventListener('click', printAll);
-  $('btnPrint3').addEventListener('click', printAll);
+  function pendingCount(){
+    var n = 0;
+    for (var i = 0; i < samples.length; i++) { if (!samples[i].synced) { n++; } }
+    return n;
+  }
+  function updateDataStat(msg){
+    var el = $('dataStat');
+    if (el) { el.textContent = msg || ("本地已有 " + samples.length + " 条记录，其中待同步 " + pendingCount() + " 条"); }
+    var cs = $('cloudState');
+    if (!cs) { return; }
+    if (CLOUD.mode === "off" || !CLOUD.url) {
+      cs.textContent = "云端同步：尚未配置。数据目前只保存在这台设备上，请每天点一次「导出数据」留底。";
+    } else {
+      cs.textContent = "云端同步：已配置（" + (CLOUD.mode === "gas" ? "Google 表格" : "REST 接口") + "），待同步 " + pendingCount() + " 条。";
+    }
+  }
+
+  function stripSitePhotos(s){
+    return { id:s.id, name:s.name, scores:s.scores, rentM:s.rentM, revM:s.revM, createdAt:s.createdAt };
+  }
+  function exportData(){
+    var stamp = new Date().toISOString();
+    var full = { app: "almaty-tea-kit", v: 3, exportedAt: stamp, sites: sites, samples: samples };
+    var light = { app: "almaty-tea-kit", v: 3, exportedAt: stamp, sites: [], samples: samples };
+    var nPhoto = 0;
+    for (var i = 0; i < sites.length; i++) {
+      light.sites.push(stripSitePhotos(sites[i]));
+      nPhoto += (sites[i].photos ? sites[i].photos.length : 0);
+    }
+    $('dataBox').value = JSON.stringify(light);
+    try {
+      var blob = new Blob([JSON.stringify(full)], { type: "application/json" });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = "tea-survey-" + dateStamp() + ".json";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); if (a.parentNode) { a.parentNode.removeChild(a); } }, 1500);
+    } catch (e) { /* 手机浏览器可能拦自动下载，用框里的文字复制即可 */ }
+    updateDataStat("已导出 " + samples.length + " 条记录、" + sites.length + " 个点位" +
+      (nPhoto ? ("（含 " + nPhoto + " 张照片，照片只在下载的文件里）") : "") +
+      "。文字版在下面的框里，可全选复制发到微信。");
+  }
+
+  function isDuplicate(r){
+    for (var i = 0; i < samples.length; i++) {
+      var s = samples[i];
+      if (s.ts === r.ts && s.eff === r.eff && s.mins === r.mins && (s.siteId || "") === (r.siteId || "")) { return true; }
+    }
+    return false;
+  }
+
+  function importData(){
+    var txt = $('dataBox').value.replace(/^\s+|\s+$/g, "");
+    if (!txt) { alert('请先把要导入的文字粘到下面的框里。'); return; }
+    var obj = null;
+    try { obj = JSON.parse(txt); } catch (e) { obj = null; }
+    if (!obj) { alert('这段文字格式不对，请确认是完整复制过来的内容。'); return; }
+    var incoming = obj.samples || [];
+    var inSites = obj.sites || [];
+    if (!incoming.length && !inSites.length) { alert('这段文字里没有找到记录。'); return; }
+
+    /* 先合并点位：同 id 的合并照片，新点位直接加进来 */
+    var addedSites = 0;
+    for (var a = 0; a < inSites.length; a++) {
+      var inc = inSites[a];
+      if (!inc || !inc.id) { continue; }
+      var mine = siteById(inc.id);
+      if (!mine) {
+        sites.push(inc);
+        addedSites++;
+      } else if (inc.photos && inc.photos.length) {
+        if (!mine.photos) { mine.photos = []; }
+        for (var b = 0; b < inc.photos.length; b++) {
+          var has = false;
+          for (var c = 0; c < mine.photos.length; c++) {
+            if (mine.photos[c].id === inc.photos[b].id) { has = true; break; }
+          }
+          if (!has) { mine.photos.push(inc.photos[b]); }
+        }
+      }
+    }
+
+    /* 再合并样本，找不到归属点位的记录自动建一个 */
+    var added = 0;
+    for (var i = 0; i < incoming.length; i++) {
+      var r = incoming[i];
+      if (!r.siteId || !siteById(r.siteId)) {
+        var match = null;
+        for (var d = 0; d < sites.length; d++) {
+          if (sites[d].name === r.site) { match = sites[d]; break; }
+        }
+        if (!match) { match = createSite(r.site || "导入的点位", true); addedSites++; }
+        r.siteId = match.id;
+      }
+      if (isDuplicate(r)) { continue; }
+      samples.push(r);
+      added++;
+    }
+    samples.sort(function(x, y){ return (x.ts || 0) - (y.ts || 0); });
+    ensureSites();
+    renderSiteSelect();
+    renderSamples();
+    updateAll();
+    save();
+    updateDataStat("导入完成：新增 " + added + " 条记录" + (addedSites ? ("、" + addedSites + " 个点位") : "") +
+      "，本地现有 " + samples.length + " 条记录。");
+  }
+
+  function postToCloud(body, cb){
+    if (CLOUD.mode === "gas") {
+      fetch(CLOUD.url, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: body })
+        .then(function(){ cb(true); })
+        .catch(function(){
+          fetch(CLOUD.url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: body })
+            .then(function(){ cb(true); })
+            .catch(function(){ cb(false); });
+        });
+      return;
+    }
+    var h = { "Content-Type": "application/json" };
+    if (CLOUD.key) { h["apikey"] = CLOUD.key; h["Authorization"] = "Bearer " + CLOUD.key; }
+    fetch(CLOUD.url, { method: "POST", headers: h, body: body })
+      .then(function(r){ cb(r.ok); })
+      .catch(function(){ cb(false); });
+  }
+
+  function syncNow(silent){
+    if (CLOUD.mode === "off" || !CLOUD.url) {
+      if (!silent) { alert('云端还没配置。等 Google 表格部署好、把网址填进来就生效——数据现在都存在这台设备上，不会丢。'); }
+      return;
+    }
+    var pend = [];
+    for (var i = 0; i < samples.length; i++) { if (!samples[i].synced) { pend.push(samples[i]); } }
+    if (!pend.length) {
+      if (!silent) { alert('没有需要同步的新记录。'); }
+      return;
+    }
+    var payload = {
+      token: CLOUD.token,
+      site: $('siteName') ? $('siteName').value : "",
+      exportedAt: new Date().toISOString(),
+      records: pend
+    };
+    if (!silent) { updateDataStat("正在同步 " + pend.length + " 条…"); }
+    postToCloud(JSON.stringify(payload), function(ok){
+      if (ok) {
+        for (var j = 0; j < pend.length; j++) { pend[j].synced = true; }
+        save();
+        updateDataStat("同步成功：本次上传 " + pend.length + " 条，本地共 " + samples.length + " 条。");
+      } else {
+        updateDataStat("同步失败（网络或网址有问题）。记录仍在手机上，有网时再点一次「同步到云端」即可。");
+      }
+    });
+  }
+
+  $('btnExport').addEventListener('click', exportData);
+  $('btnImport').addEventListener('click', importData);
+  $('btnSync').addEventListener('click', function(){ syncNow(false); });
+
+  window.addEventListener('online', function(){
+    if (CLOUD.mode !== "off" && pendingCount()) { syncNow(true); }
+  });
+
+  /* ---------- 点位与照片的交互 ---------- */
+  if ($('siteSel')) {
+    $('siteSel').addEventListener('change', function(){ switchSite(this.value); });
+  }
+  if ($('siteSel2')) {
+    $('siteSel2').addEventListener('change', function(){ switchSite(this.value); });
+  }
+  if ($('btnNewSite')) {
+    $('btnNewSite').addEventListener('click', function(){
+      var nm = prompt("新点位名称 / 地址：", "点位 " + (sites.length + 1));
+      if (nm === null) { return; }
+      saveSiteFields(currentSite);
+      var s = createSite(nm.replace(/^\s+|\s+$/g, ""), true);
+      currentSite = s.id;
+      loadSiteFields(currentSite);
+      renderSiteSelect();
+      renderSamples();
+      updateScore();
+      save();
+    });
+  }
+  if ($('btnDelSite')) {
+    $('btnDelSite').addEventListener('click', function(){
+      if (sites.length <= 1) { alert('至少要保留一个点位。'); return; }
+      var s = currentSiteObj();
+      if (!s) { return; }
+      var cnt = 0;
+      for (var i = 0; i < samples.length; i++) { if (samples[i].siteId === s.id) { cnt++; } }
+      if (!confirm("删除点位「" + siteNameOf(s) + "」？\n它的 " + cnt + " 条记录和照片会一起删掉，删了就找不回来。")) { return; }
+      var kept = [];
+      for (var j = 0; j < samples.length; j++) { if (samples[j].siteId !== s.id) { kept.push(samples[j]); } }
+      samples = kept;
+      for (var k = 0; k < sites.length; k++) { if (sites[k].id === s.id) { sites.splice(k, 1); break; } }
+      currentSite = sites[0].id;
+      loadSiteFields(currentSite);
+      renderSiteSelect();
+      renderSamples();
+      updateScore();
+      save();
+    });
+  }
+  if ($('photoInput')) {
+    $('photoInput').addEventListener('change', function(){
+      if (this.files && this.files.length) { addPhotoFiles(this.files); }
+      this.value = "";
+    });
+  }
+  if ($('siteName')) {
+    $('siteName').addEventListener('input', function(){
+      var s = currentSiteObj();
+      if (!s) { return; }
+      s.name = this.value;
+      if ($('scoreSiteName')) { $('scoreSiteName').textContent = siteNameOf(s); }
+      renderSiteSelect();
+    });
+  }
 
   /* ---------- 本地保存 ---------- */
   var KEY = "almaty_tea_kit_v1";
   function save(){
     try {
-      var data = { fields: {}, checks: {} };
+      saveSiteFields(currentSite);
+      var data = { fields: {}, checks: {}, sites: sites, currentSite: currentSite };
       var ins = document.querySelectorAll('input');
       for (var i = 0; i < ins.length; i++) {
         var el = ins[i];
         if (!el.id) { continue; }
         if (el.type === 'checkbox') { data.checks[el.id] = el.checked ? 1 : 0; }
+        else if (el.type === 'file') { continue; }
         else { data.fields[el.id] = el.value; }
       }
+      data.samples = samples;
       localStorage.setItem(KEY, JSON.stringify(data));
-    } catch (e) { /* 隐私模式或本地文件限制，忽略即可 */ }
+    } catch (e) {
+      var st = $('photoState');
+      if (st) { st.textContent = "本地存储可能已满：先点「导出数据」备份，再删掉一些照片或旧点位。"; }
+    }
   }
   function load(){
     var raw = null;
@@ -620,7 +1216,7 @@
       for (var id in data.fields) {
         if (!data.fields.hasOwnProperty(id)) { continue; }
         var el = $(id);
-        if (el && el.type !== 'checkbox') { el.value = data.fields[id]; }
+        if (el && el.type !== 'checkbox' && el.type !== 'file') { el.value = data.fields[id]; }
       }
     }
     if (data && data.checks) {
@@ -634,11 +1230,20 @@
       var r = $('c_' + CRIT[i].k);
       if (r) { $('v_' + CRIT[i].k).textContent = r.value; }
     }
+    if (data && data.sites && data.sites.length) {
+      sites = data.sites;
+      currentSite = data.currentSite || "";
+    }
+    if (data && data.samples) { samples = data.samples; }
   }
 
   renderCount();
-  renderSamples();
   load();
+  ensureSites();
+  renderSiteSelect();
+  loadSiteFields(currentSite);
+  renderSamples();
+  updateDataStat();
   updateAll();
 })();
 </script>
