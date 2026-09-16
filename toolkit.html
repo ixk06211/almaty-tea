@@ -167,7 +167,7 @@
       <span class="mark" aria-hidden="true">茶</span>
       <div class="bt">
         <h1>阿拉木图 · 奶茶店选址调研工具包</h1>
-        <p class="sub">版本 v1.9 · 离线可用，建议加到手机主屏</p>
+        <p class="sub">版本 v2.0 · 离线可用，建议加到手机主屏</p>
       </div>
       <span class="sitechip" id="siteChip" title="当前点位">—</span>
     </div>
@@ -341,7 +341,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <footer>数据先存在这台设备，有网时自动同步到云端 Google 表格 · 版本 v1.9</footer>
+  <footer>数据先存在这台设备，有网时自动同步到云端 Google 表格 · 版本 v2.0</footer>
 </div>
 <script>
 (function(){
@@ -1141,104 +1141,96 @@
   function pullFromCloud(){
     if (CLOUD.mode === "off" || !CLOUD.url) { alert('云端还没配置。'); return; }
     updateDataStat("正在从云端拉取…");
-    var base = CLOUD.url + (CLOUD.url.indexOf("?") < 0 ? "?" : "&");
-    var url = base + "action=pull&token=" + encodeURIComponent(CLOUD.token);
-    var finished = false;
-
-    function handle(data){
-      if (finished) { return; }
-      finished = true;
-      if (!data || !data.ok) {
-        updateDataStat("拉取失败：" + ((data && data.error) || "云端返回异常"));
+    var url = CLOUD.url + (CLOUD.url.indexOf("?") < 0 ? "?" : "&") +
+              "type=frame&action=pull&token=" + encodeURIComponent(CLOUD.token) + "&_=" + Date.now();
+    expectCloud(function(reached, data){
+      if (!reached) {
+        updateDataStat("拉取失败：没等到云端回应（网络或代理挡住了）。到阿拉木图用当地网络通常就没问题。");
+        return;
+      }
+      if (!data.ok) {
+        updateDataStat("拉取失败：" + (data.error || "云端返回异常"));
         return;
       }
       if (!data.records) {
-        updateDataStat("拉取失败：云端脚本还是第一版（没有拉取功能）。请在 Apps Script 里重新部署新版本后再试。");
+        updateDataStat("拉取失败：云端脚本不是最新版（缺少拉取功能），需要重新部署脚本。");
         return;
       }
-      var recs = data.records || [];
+      var recs = data.records;
       var r = mergePayload({ sites: [], samples: recs }, true);
       updateDataStat("已从云端拉取 " + recs.length + " 条，其中新增 " + r.samples + " 条" +
         (r.sites ? ("、" + r.sites + " 个点位") : "") + "。本地现有 " + samples.length + " 条。");
       toast("云端拉取完成：新增 " + r.samples + " 条");
-    }
-    function fail(msg){
-      if (finished) { return; }
-      finished = true;
-      updateDataStat("拉取失败：" + msg);
-    }
-
-    /* 备用通道：JSONP（不受跨域限制，能读到数据但读不到错误码） */
-    function tryJsonp(reason){
-      var cbName = "atmPull" + Date.now().toString(36);
-      var sc = document.createElement("script");
-      var cleaned = false;
-      function cleanup(){
-        if (sc.parentNode) { sc.parentNode.removeChild(sc); }
-        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
-      }
-      window[cbName] = function(data){
-        if (cleaned) { return; }
-        cleaned = true;
-        cleanup();
-        handle(data);
-      };
-      sc.onerror = function(){
-        if (cleaned) { return; }
-        cleaned = true;
-        cleanup();
-        fail("云端地址打不开（" + reason + "）");
-      };
-      sc.src = url + "&callback=" + cbName + "&_=" + Date.now();
-      document.body.appendChild(sc);
-      setTimeout(function(){
-        if (cleaned) { return; }
-        cleaned = true;
-        cleanup();
-        fail("等不到云端回应（" + reason + "）");
-      }, 13000);
-    }
-
-    /* 首选 fetch：能拿到 HTTP 状态码，出问题时报得清楚 */
-    if (typeof fetch === "function") {
-      var fetchErr = "";
-      fetch(url, { method: "GET" })
-        .then(function(r){
-          if (!r.ok) { fetchErr = "HTTP " + r.status; throw new Error(fetchErr); }
-          return r.text();
-        })
-        .then(function(txt){
-          var data = null;
-          try { data = JSON.parse(txt); } catch (e) {
-            throw new Error("返回的不是数据（可能是登录页）");
-          }
-          handle(data);
-        })
-        .catch(function(err){
-          if (finished) { return; }
-          tryJsonp(String(fetchErr || (err && err.message) || err));
-        });
-    } else {
-      tryJsonp("浏览器不支持 fetch");
-    }
+    });
+    cloudFrame().src = url;
   }
+
+  /* ---------- 云端通道：隐藏 iframe + 表单提交 ----------
+     为什么不用普通请求：有些网络环境（代理、公司网络）会拦"网页内部发出的请求"，
+     但不会拦表单提交——那和"打开一个网页"是同一类。这样既能传上去，也能拿到回执。 */
+  var pendingCloud = null;
+
+  function cloudFrame(){
+    var fr = document.getElementById("atmCloudFrame");
+    if (!fr) {
+      fr = document.createElement("iframe");
+      fr.id = "atmCloudFrame";
+      fr.name = "atmCloudFrame";
+      fr.setAttribute("aria-hidden", "true");
+      fr.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;left:-9999px;top:0";
+      document.body.appendChild(fr);
+    }
+    return fr;
+  }
+  function expectCloud(cb){
+    if (pendingCloud && pendingCloud.timer) { clearTimeout(pendingCloud.timer); }
+    pendingCloud = { cb: cb };
+    pendingCloud.timer = setTimeout(function(){
+      if (pendingCloud && pendingCloud.cb === cb) {
+        pendingCloud = null;
+        cb(false, null);
+      }
+    }, 15000);
+  }
+  window.addEventListener("message", function(ev){
+    var d = ev.data;
+    if (typeof d === "string") {
+      try { d = JSON.parse(d); } catch (e) { return; }
+    }
+    if (!d || d.atm !== "cloud") { return; }
+    var p = pendingCloud;
+    if (!p) { return; }
+    pendingCloud = null;
+    if (p.timer) { clearTimeout(p.timer); }
+    p.cb(true, d);
+  });
 
   function postToCloud(body, cb){
     if (CLOUD.mode === "gas") {
-      fetch(CLOUD.url, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: body })
-        .then(function(){ cb(true); })
-        .catch(function(){
-          fetch(CLOUD.url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: body })
-            .then(function(){ cb(true); })
-            .catch(function(){ cb(false); });
-        });
+      cloudFrame();
+      expectCloud(cb);
+      var form = document.createElement("form");
+      form.method = "POST";
+      form.action = CLOUD.url;
+      form.target = "atmCloudFrame";
+      form.acceptCharset = "UTF-8";
+      form.style.display = "none";
+      var input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "payload";
+      input.value = body;
+      form.appendChild(input);
+      document.body.appendChild(form);
+      try { form.submit(); } catch (e) { cb(false, null); }
+      setTimeout(function(){ if (form.parentNode) { form.parentNode.removeChild(form); } }, 3000);
       return;
     }
     var h = { "Content-Type": "application/json" };
     if (CLOUD.key) { h["apikey"] = CLOUD.key; h["Authorization"] = "Bearer " + CLOUD.key; }
     fetch(CLOUD.url, { method: "POST", headers: h, body: body })
-      .then(function(r){ cb(r.ok); })
-      .catch(function(){ cb(false); });
+      .then(function(r){ return r.json(); })
+      .then(function(d){ cb(true, d); })
+      .catch(function(){ cb(false, null); });
   }
 
   function syncNow(silent){
@@ -1259,13 +1251,18 @@
       records: pend
     };
     if (!silent) { updateDataStat("正在同步 " + pend.length + " 条…"); }
-    postToCloud(JSON.stringify(payload), function(ok){
-      if (ok) {
+    postToCloud(JSON.stringify(payload), function(reached, res){
+      if (reached && res && res.ok) {
         for (var j = 0; j < pend.length; j++) { pend[j].synced = true; }
         save();
-        updateDataStat("同步成功：本次上传 " + pend.length + " 条，本地共 " + samples.length + " 条。");
+        updateDataStat("同步成功（云端已确认）：本次写入 " + (res.added || 0) + " 条" +
+          (res.skipped ? ("，跳过重复 " + res.skipped + " 条") : "") +
+          "，表格里共 " + (res.total || 0) + " 条。");
+        toast("云端已确认写入 " + (res.added || 0) + " 条");
+      } else if (reached) {
+        updateDataStat("云端拒绝写入：" + ((res && res.error) || "未知原因") + "。记录仍在手机上。");
       } else {
-        updateDataStat("同步失败（网络或网址有问题）。记录仍在手机上，有网时再点一次「同步到云端」即可。");
+        updateDataStat("没收到云端确认（可能网络不稳）。记录仍留在手机上，有网时再点一次「同步到云端」。");
       }
     });
   }
