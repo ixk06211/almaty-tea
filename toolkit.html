@@ -167,7 +167,7 @@
       <span class="mark" aria-hidden="true">茶</span>
       <div class="bt">
         <h1>阿拉木图 · 奶茶店选址调研工具包</h1>
-        <p class="sub">版本 v2.5 · 离线可用，建议加到手机主屏</p>
+        <p class="sub">版本 v2.7 · 离线可用，建议加到手机主屏</p>
       </div>
       <span class="sitechip" id="siteChip" title="当前点位">—</span>
     </div>
@@ -186,7 +186,7 @@
       <ol class="guide">
         <li><b>先建点位</b>　把要考察的铺位建成一个点位（现在叫「点位 1」，点上面的名字框改成真实地址）。一天测几个铺位，就建几个点位。</li>
         <li><b>站定位置点计数</b>　站在门口，看到像客户的人经过就点一下绿色「有效人流」；测满 15 分钟，点「记录这段样本」。位置和坐标会自动带上。</li>
-        <li><b>回来看结论</b>　「② 点位评分」打分看总分，「③ 现场检查」逐项打勾。数据有网时自动进你的 Google 表格。</li>
+        <li><b>回来看结论</b>　「② 点位评分」打分看总分，「③ 现场检查」逐项打勾。数据有网时自动上传到云端。</li>
       </ol>
       <button type="button" class="btn pri block" id="btnGuideOk">知道了，开始用</button>
     </div>
@@ -232,7 +232,7 @@
       </div>
       <label class="fld"><span>这条记录算在哪个点位</span><select id="siteSel2"></select></label>
       <button type="button" class="btn pri block" id="btnSave">记录这段样本</button>
-      <p class="hint">标准做法：每段取 <b>15 分钟</b>，高峰时段取 2 段取平均。每个点位至少测 3 个工作日 + 2 个周末日。<br><b>位置是全自动的</b>：打开页面就开始定位，停留期间每 2 分钟自动刷新，你走到下一个点位不用做任何操作，记录样本时自动带上当时的坐标（纬度 / 经度 / 精度）。坐标会随记录一起同步到你自己的 Google 表格；照片只留在本机，不上传。</p>
+      <p class="hint">标准做法：每段取 <b>15 分钟</b>，高峰时段取 2 段取平均。每个点位至少测 3 个工作日 + 2 个周末日。<br><b>位置是全自动的</b>：打开页面就开始定位，停留期间每 2 分钟自动刷新，你走到下一个点位不用做任何操作，记录样本时自动带上当时的坐标（纬度 / 经度 / 精度）。坐标会随记录一起同步到云端；照片只留在本机，不上传。</p>
     </div>
 
     <div class="card">
@@ -256,7 +256,7 @@
       </div>
       <textarea id="dataBox" placeholder="点「导出数据」：这里会生成一段文字，全选复制就能发到微信保存；收到同事发来的文字，粘到这里再点「导入并合并」，两份记录就会合到一起。" style="margin-top:10px;min-height:92px"></textarea>
       <p class="hint" id="cloudState">云端同步：尚未配置。</p>
-      <p class="hint">说明：记录会先存在这台设备，有网时自动同步到你的 Google 表格。<b>换手机、清缓存、用无痕模式都会让本机这份消失</b>，所以换设备之前先点一次「同步到云端」，或者收工前点「导出数据」留个底。</p>
+      <p class="hint">说明：记录会先存在这台设备，有网时自动同步到云端。<b>换手机、清缓存、用无痕模式都会让本机这份消失</b>，所以换设备之前先点一次「同步到云端」，或者收工前点「导出数据」留个底。</p>
       <p class="hint">换了新手机？打开页面后点一次 <b>「从云端拉取」</b>，以前的数据就会回到这台设备上；也可以用它把同事测的记录合到你这台机器上。</p>
     </div>
 
@@ -341,7 +341,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <footer>数据先存在这台设备，有网时自动同步到云端 · 版本 v2.5</footer>
+  <footer>数据先存在这台设备，有网时自动同步到云端 · 版本 v2.7</footer>
 </div>
 <script>
 (function(){
@@ -1201,11 +1201,10 @@
   /* ---------- 腾讯云开发（国内直连，不需要代理） ---------- */
   /* 腾讯云 SDK：先用 ESM 方式（最不容易猜错地址），再退回到传统 script 地址 */
   var TCB_SDKS = [
-    { type: "esm", url: "https://esm.sh/@cloudbase/js-sdk@1.7.2" },
-    { type: "esm", url: "https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@1.7.2/+esm" },
-    { type: "js",  url: "https://imgcache.qq.com/qcloud/cloudbase-js-sdk/1.7.2/cloudbase.full.js" },
-    { type: "js",  url: "https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@1.7.2/dist/cloudbase.full.js" },
-    { type: "js",  url: "https://unpkg.com/@cloudbase/js-sdk@1.7.2/dist/cloudbase.full.js" }
+    { type: "esm", url: "https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@2/+esm" },
+    { type: "esm", url: "https://esm.sh/@cloudbase/js-sdk@2" },
+    { type: "esm", url: "https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@2.7.9/+esm" },
+    { type: "esm", url: "https://unpkg.com/@cloudbase/js-sdk@2/+esm" }
   ];
   var tcbApp = null, tcbDb = null;
 
