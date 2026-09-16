@@ -167,7 +167,7 @@
       <span class="mark" aria-hidden="true">茶</span>
       <div class="bt">
         <h1>阿拉木图 · 奶茶店选址调研工具包</h1>
-        <p class="sub">版本 v2.2 · 离线可用，建议加到手机主屏</p>
+        <p class="sub">版本 v2.5 · 离线可用，建议加到手机主屏</p>
       </div>
       <span class="sitechip" id="siteChip" title="当前点位">—</span>
     </div>
@@ -341,7 +341,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <footer>数据先存在这台设备，有网时自动同步到云端 · 版本 v2.2</footer>
+  <footer>数据先存在这台设备，有网时自动同步到云端 · 版本 v2.5</footer>
 </div>
 <script>
 (function(){
@@ -1199,23 +1199,64 @@
   }
 
   /* ---------- 腾讯云开发（国内直连，不需要代理） ---------- */
-  var TCB_SDK = "https://imgcache.qq.com/qcloud/cloudbase-js-sdk/1.7.2/cloudbase.full.js";
+  /* 腾讯云 SDK：先用 ESM 方式（最不容易猜错地址），再退回到传统 script 地址 */
+  var TCB_SDKS = [
+    { type: "esm", url: "https://esm.sh/@cloudbase/js-sdk@1.7.2" },
+    { type: "esm", url: "https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@1.7.2/+esm" },
+    { type: "js",  url: "https://imgcache.qq.com/qcloud/cloudbase-js-sdk/1.7.2/cloudbase.full.js" },
+    { type: "js",  url: "https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@1.7.2/dist/cloudbase.full.js" },
+    { type: "js",  url: "https://unpkg.com/@cloudbase/js-sdk@1.7.2/dist/cloudbase.full.js" }
+  ];
   var tcbApp = null, tcbDb = null;
 
   function loadCloudbase(cb){
-    if (window.cloudbase) { cb(true); return; }
-    var s = document.createElement("script");
-    s.src = TCB_SDK;
-    s.onload = function(){ cb(!!window.cloudbase); };
-    s.onerror = function(){ cb(false); };
-    document.head.appendChild(s);
+    if (window.cloudbase) { cb(true, ""); return; }
+    var i = 0, lastErr = "";
+    var next = function(){
+      if (i >= TCB_SDKS.length) { cb(false, lastErr || "所有下载地址都试过了"); return; }
+      var item = TCB_SDKS[i++];
+
+      if (item.type === "esm") {
+        var p = null;
+        try { p = import(item.url); } catch (e) { lastErr = "不支持 ESM：" + e.message; next(); return; }
+        p.then(function(mod){
+          if (window.cloudbase) { cb(true, ""); return; }
+          var obj = (mod && mod.default) ? mod.default : mod;
+          if (obj && (obj.init || (obj.default && obj.default.init))) {
+            window.cloudbase = (obj.init ? obj : obj.default);
+            cb(true, "");
+          } else {
+            lastErr = "模块里没有 cloudbase";
+            next();
+          }
+        }).catch(function(e){
+          lastErr = "加载失败：" + ((e && e.message) || e);
+          next();
+        });
+        return;
+      }
+
+      var s = document.createElement("script");
+      var settled = false;
+      var finish = function(ok){
+        if (settled) { return; }
+        settled = true;
+        if (ok && window.cloudbase) { cb(true, ""); } else { lastErr = "地址打不开"; next(); }
+      };
+      s.onload = function(){ finish(!!window.cloudbase); };
+      s.onerror = function(){ finish(false); };
+      s.src = item.url;
+      document.head.appendChild(s);
+      setTimeout(function(){ finish(!!window.cloudbase); }, 8000);
+    };
+    next();
   }
 
   /* 初始化 + 匿名登录（匿名登录需要在腾讯云控制台里开启） */
   function tcbInit(cb){
     if (tcbDb) { cb(null); return; }
-    loadCloudbase(function(ok){
-      if (!ok) { cb("没能加载腾讯云 SDK（检查一下网络）"); return; }
+    loadCloudbase(function(ok, why){
+      if (!ok) { cb("没能加载腾讯云 SDK（" + why + "）。如果你在用代理，可以试试切成全局模式"); return; }
       try {
         tcbApp = cloudbase.init({ env: CLOUD.env });
       } catch (e) {
