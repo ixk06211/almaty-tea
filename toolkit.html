@@ -167,7 +167,7 @@
       <span class="mark" aria-hidden="true">茶</span>
       <div class="bt">
         <h1>阿拉木图 · 奶茶店选址调研工具包</h1>
-        <p class="sub">版本 v2.7 · 离线可用，建议加到手机主屏</p>
+        <p class="sub">版本 v2.8 · 离线可用，建议加到手机主屏</p>
       </div>
       <span class="sitechip" id="siteChip" title="当前点位">—</span>
     </div>
@@ -341,7 +341,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <footer>数据先存在这台设备，有网时自动同步到云端 · 版本 v2.7</footer>
+  <footer>数据先存在这台设备，有网时自动同步到云端 · 版本 v2.8</footer>
 </div>
 <script>
 (function(){
@@ -663,6 +663,7 @@
 
   /* ---------- ① 计数器与计时 ---------- */
   var eff = 0, all = 0, t0 = 0, tickId = null, samples = [];
+  var pendingDeletes = [];   /* 本机删掉、云端还没删掉的记录 key（断网时先记着，有网自动补删） */
 
   function renderCount(){ $('cEff').textContent = eff; $('cAll').textContent = all; }
 
@@ -922,8 +923,20 @@
     for (var j = 0; j < del.length; j++) {
       del[j].addEventListener('click', function(){
         var ts = parseInt(this.getAttribute('data-ts'), 10);
+        var removed = null;
         for (var k = 0; k < samples.length; k++) {
-          if (samples[k].ts === ts && samples[k].siteId === currentSite) { samples.splice(k, 1); break; }
+          if (samples[k].ts === ts && samples[k].siteId === currentSite) {
+            removed = samples.splice(k, 1)[0];
+            break;
+          }
+        }
+        if (removed) {
+          pendingDeletes.push((removed.siteId || "") + "|" + (removed.ts || ""));
+          toast("已删除，正在同步删除云端…");
+          flushDeletes(function(err, n){
+            if (err) { updateDataStat("本地已删除；云端暂时没删掉（可能没网），有网时会自动补删。"); return; }
+            if (n) { toast("本地和云端都已删除"); }
+          });
         }
         renderSamples();
         updateAll();
@@ -1347,6 +1360,41 @@
     });
   }
 
+  /* 删除云端记录：按 key 删，重复删也没关系 */
+  function cloudDeleteKeys(keys, cb){
+    if (!keys.length || CLOUD.mode !== "tcb") { if (cb) { cb(null, 0, 0); } return; }
+    tcbInit(function(err){
+      if (err) { if (cb) { cb(err); } return; }
+      var col = tcbDb.collection(CLOUD.collection);
+      var i = 0, okN = 0, failN = 0;
+      var step = function(){
+        if (i >= keys.length) { if (cb) { cb(null, okN, failN); } return; }
+        var k = keys[i++];
+        col.where({ key: k }).remove()
+          .then(function(){ okN++; step(); })
+          .catch(function(){ failN++; step(); });
+      };
+      step();
+    });
+  }
+
+  /* 把本机删掉的记录也从云端删掉；没网就先记着，下次有网自动补删 */
+  function flushDeletes(cb){
+    if (!pendingDeletes.length || !cloudReady() || CLOUD.mode !== "tcb") {
+      if (cb) { cb(null, 0); }
+      return;
+    }
+    var keys = pendingDeletes.slice();
+    cloudDeleteKeys(keys, function(err, okN, failN){
+      if (err) { if (cb) { cb(err); } return; }
+      if (okN > 0) {
+        pendingDeletes = (failN > 0) ? keys.slice() : [];   /* 有失败就留着下次再试 */
+        save();
+      }
+      if (cb) { cb(null, okN); }
+    });
+  }
+
   /* 拉取：一次最多 100 条，最多取 500 条 */
   function tcbPull(cb){
     tcbInit(function(err){
@@ -1462,9 +1510,11 @@
     };
 
     if (CLOUD.mode === "tcb") {
-      tcbSync(pend, function(err, added, skipped){
-        if (err) { finish(false, 0, 0, null, err); return; }
-        finish(true, added || 0, skipped || 0, null, null);
+      flushDeletes(function(){
+        tcbSync(pend, function(err, added, skipped){
+          if (err) { finish(false, 0, 0, null, err); return; }
+          finish(true, added || 0, skipped || 0, null, null);
+        });
       });
       return;
     }
@@ -1525,7 +1575,13 @@
       for (var i = 0; i < samples.length; i++) { if (samples[i].siteId === s.id) { cnt++; } }
       if (!confirm("删除点位「" + siteNameOf(s) + "」？\n它的 " + cnt + " 条记录和照片会一起删掉，删了就找不回来。")) { return; }
       var kept = [];
-      for (var j = 0; j < samples.length; j++) { if (samples[j].siteId !== s.id) { kept.push(samples[j]); } }
+      for (var j = 0; j < samples.length; j++) {
+        if (samples[j].siteId === s.id) {
+          pendingDeletes.push((samples[j].siteId || "") + "|" + (samples[j].ts || ""));   /* 云端也删 */
+        } else {
+          kept.push(samples[j]);
+        }
+      }
       samples = kept;
       for (var k = 0; k < sites.length; k++) { if (sites[k].id === s.id) { sites.splice(k, 1); break; } }
       currentSite = sites[0].id;
@@ -1534,6 +1590,7 @@
       renderSamples();
       updateScore();
       save();
+      flushDeletes(function(){});
     });
   }
   if ($('photoInput')) {
@@ -1598,6 +1655,7 @@
         else { data.fields[el.id] = el.value; }
       }
       data.samples = samples;
+      data.pendingDeletes = pendingDeletes;
       localStorage.setItem(KEY, JSON.stringify(data));
     } catch (e) {
       var st = $('photoState');
@@ -1633,6 +1691,7 @@
       currentSite = data.currentSite || "";
     }
     if (data && data.samples) { samples = data.samples; }
+    if (data && data.pendingDeletes) { pendingDeletes = data.pendingDeletes; }
   }
 
   renderCount();
