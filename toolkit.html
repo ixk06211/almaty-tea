@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>阿拉木图奶茶店 · 选址调研工具包</title>
+<style>
+  :root{
+    --bg:#f7f5f1; --panel:#ffffff; --ink:#1c1a17; --ink-2:#5d574f; --line:#e3ded6;
+    --brand:#1f4d3f; --brand-2:#2f6b57; --warn:#a8620b; --danger:#9c2b2b; --ok:#1f6b3a;
+    --chip:#efeae2; --radius:10px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#141513; --panel:#1c1e1c; --ink:#eceae5; --ink-2:#a9a49b; --line:#2e312d;
+           --brand:#7fc2a5; --brand-2:#5fa387; --warn:#e0a54a; --danger:#e08a8a; --ok:#7fc79a; --chip:#252824; }
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px; line-height:1.6}
+  .wrap{max-width:760px; margin:0 auto; padding:14px 14px 60px}
+  header.top{padding:6px 2px 12px}
+  header.top h1{font-size:19px; margin:0 0 4px; letter-spacing:.3px}
+  header.top p{margin:0; color:var(--ink-2); font-size:12.5px}
+  nav.tabs{display:flex; gap:6px; overflow-x:auto; padding:4px 2px 10px; position:sticky; top:0;
+    background:var(--bg); z-index:5; -webkit-overflow-scrolling:touch}
+  nav.tabs button{flex:0 0 auto; border:1px solid var(--line); background:var(--panel); color:var(--ink-2);
+    padding:8px 12px; border-radius:999px; font-size:13.5px; font-family:inherit}
+  nav.tabs button.on{background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600}
+  section.panel{display:none}
+  section.panel.on{display:block}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin:0 0 12px}
+  .card h2{font-size:15px; margin:0 0 10px; letter-spacing:.2px}
+  .hint{color:var(--ink-2); font-size:12.5px; margin:6px 0 0}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
+  .row > .fld{flex:1 1 140px; min-width:120px}
+  .fld{display:block; margin:0 0 10px}
+  .fld span{display:block; font-size:12.5px; color:var(--ink-2); margin-bottom:4px}
+  input[type=number],input[type=text],textarea{
+    width:100%; padding:10px; border:1px solid var(--line); border-radius:8px;
+    background:var(--bg); color:var(--ink); font-size:16px; font-family:inherit}
+  textarea{font-size:14px; line-height:1.7; min-height:120px}
+  input[type=range]{width:100%; accent-color:var(--brand-2); height:28px}
+  button{font-family:inherit; font-size:14px; cursor:pointer}
+  .btn{border:1px solid var(--line); background:var(--panel); color:var(--ink); padding:10px 14px; border-radius:8px}
+  .btn.pri{background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600}
+  .btn.block{width:100%; margin-top:6px}
+  .taprow{display:flex; gap:10px; margin:8px 0 4px}
+  .tap{flex:1; border:0; border-radius:12px; padding:20px 8px; font-size:15px; font-weight:600; color:#fff;
+    background:var(--brand); line-height:1.3}
+  .tap.alt{background:var(--ink-2)}
+  .tap:active{transform:scale(.985)}
+  .tap b{display:block; font-size:30px; letter-spacing:.5px; font-weight:700; font-variant-numeric:tabular-nums}
+  .tap span{font-size:12px; opacity:.88; font-weight:400}
+  .timer{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:2px 0 8px}
+  .timer .clock{font-variant-numeric:tabular-nums; font-size:26px; font-weight:600; letter-spacing:1px; min-width:96px}
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:8px; margin-top:8px}
+  .kpi{background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px}
+  .kpi b{display:block; font-size:20px; font-variant-numeric:tabular-nums; letter-spacing:.3px}
+  .kpi span{font-size:11.5px; color:var(--ink-2)}
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{text-align:left; padding:7px 6px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums}
+  th{color:var(--ink-2); font-weight:500; font-size:12px}
+  .del{border:0; background:transparent; color:var(--danger); font-size:12px; padding:4px}
+  .crit{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line)}
+  .crit .nm{flex:1 1 auto; font-size:13.5px}
+  .crit .nm i{display:block; font-style:normal; color:var(--ink-2); font-size:11.5px}
+  .crit input[type=range]{flex:0 0 116px; width:116px}
+  .crit .val{flex:0 0 34px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600}
+  .verdict{margin-top:10px; padding:10px 12px; border-radius:8px; font-size:13.5px; background:var(--chip); color:var(--ink)}
+  .verdict.ok{color:var(--ok)} .verdict.warn{color:var(--warn)} .verdict.bad{color:var(--danger)}
+  .chk{display:flex; gap:9px; align-items:flex-start; padding:7px 0; border-bottom:1px dotted var(--line); font-size:13.5px}
+  .chk input{margin:3px 0 0; width:18px; height:18px; flex:0 0 18px; accent-color:var(--brand)}
+  pre.script{white-space:pre-wrap; word-break:break-word; background:var(--bg); border:1px solid var(--line);
+    border-radius:8px; padding:11px; font-size:12.5px; line-height:1.75; margin:6px 0 0;
+    font-family:inherit}
+  .tag{display:inline-block; font-size:11px; padding:2px 7px; border-radius:999px; background:var(--chip); color:var(--ink-2); margin-left:6px}
+  .note{font-size:12px; color:var(--ink-2); border-left:3px solid var(--brand-2); padding:2px 0 2px 9px; margin:10px 0 0}
+  footer{color:var(--ink-2); font-size:11.5px; text-align:center; padding:18px 6px 0}
+  @media print{
+    nav.tabs,.taprow,.timer,.no-print{display:none !important}
+    body{background:#fff} section.panel{display:block !important}
+    .card{break-inside:avoid; box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>阿拉木图 · 高端奶茶店选址调研工具包</h1>
+    <p>离线可用，建议加到手机主屏。测算只是决策参考，最终以实地数据为准。</p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button type="button" class="on" data-tab="p1">① 人流实测</button>
+    <button type="button" data-tab="p2">② 点位评分</button>
+    <button type="button" data-tab="p3">③ 盈利测算</button>
+    <button type="button" data-tab="p4">④ 现场检查</button>
+    <button type="button" data-tab="p5">⑤ 7天行动</button>
+  </nav>
+
+  <section class="panel on" id="p1">
+    <div class="card">
+      <h2>现场计数</h2>
+      <p class="hint">站定位置：从<b>拟开门面</b>看出去，只数“经过门口约 5 米范围、看起来 15–40 岁”的单个行人。车辆、外卖骑手、明显赶路的通勤者不算。</p>
+      <div class="taprow">
+        <button type="button" class="tap" id="tapEff">有效人流<b id="cEff">0</b><span>15–40 岁 · 目标客群</span></button>
+        <button type="button" class="tap alt" id="tapAll">干扰流量<b id="cAll">0</b><span>其他行人（参考）</span></button>
+      </div>
+      <div class="timer">
+        <div class="clock" id="clock">00:00</div>
+        <button type="button" class="btn" id="btnStart">开始计时</button>
+        <button type="button" class="btn" id="btnStop">停止</button>
+        <button type="button" class="btn" id="btnReset">清零</button>
+      </div>
+      <div class="row">
+        <label class="fld"><span>本段时长（分钟，停止计时后自动填入）</span><input type="number" id="mins" value="15" step="0.5" min="0.5"></label>
+        <label class="fld"><span>时段说明</span><input type="text" id="slotNote" placeholder="如：工作日 17:30 晴天"></label>
+      </div>
+      <button type="button" class="btn pri block" id="btnSave">记录这段样本</button>
+      <p class="hint">标准做法：每段取 <b>15 分钟</b>，高峰时段取 2 段取平均。每个点位至少测 3 个工作日 + 2 个周末日。</p>
+    </div>
+
+    <div class="card">
+      <h2>已记录样本</h2>
+      <table id="tbl">
+        <thead><tr><th>时间</th><th>时长</th><th>有效</th><th>干扰</th><th>折算/小时</th><th></th></tr></thead>
+        <tbody id="tbody"><tr><td colspan="6" style="color:var(--ink-2)">还没有样本</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>推算这个点位的天花板</h2>
+      <div class="row">
+        <label class="fld"><span>进店转化率 %（街铺 0.8–2，商场 2–5）</span><input type="number" id="cv" value="1.5" step="0.1"></label>
+        <label class="fld"><span>平均客单价 ₸</span><input type="number" id="aov" value="2200" step="100"></label>
+        <label class="fld"><span>外卖占比 %</span><input type="number" id="dlv" value="25" step="5"></label>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><span>高峰小时有效人流</span><b id="kPeak">—</b></div>
+        <div class="kpi"><span>全天有效人流估算</span><b id="kDay">—</b></div>
+        <div class="kpi"><span>预估日销量（杯）</span><b id="kCups">—</b></div>
+        <div class="kpi"><span>预估月营业额 ₸</span><b id="kRev">—</b></div>
+      </div>
+      <p class="hint">全天人流 = 各样本折算小时流量 × 该时段小时数（08–10、12–14、20–22 各按 2 小时，14–17、17–20 各按 3 小时，其余按 1 小时）。</p>
+      <div class="note">参考门槛：街铺高峰小时有效人流低于 150 人基本不考虑；300–600 人靠转化率取胜；800 人以上且目标客群过半才算优质点位。</div>
+      <button type="button" class="btn no-print" id="btnPrint1">打印 / 存 PDF</button>
+    </div>
+  </section>
+
+  <section class="panel" id="p2">
+    <div class="card">
+      <h2>候选点位评分表</h2>
+      <label class="fld"><span>点位名称 / 地址</span><input type="text" id="siteName" placeholder="如：Достык 附近，XX 商场 1 层"></label>
+      <div id="crits"></div>
+      <div class="verdict" id="scoreOut">总分 —</div>
+    </div>
+    <div class="card">
+      <h2>硬门槛：租金能不能撑住</h2>
+      <div class="row">
+        <label class="fld"><span>月租金 ₸（含物业费）</span><input type="number" id="rentM" value="500000" step="10000"></label>
+        <label class="fld"><span>预估月营业额 ₸（从①复制过来）</span><input type="number" id="revM" value="4000000" step="100000"></label>
+      </div>
+      <div class="verdict" id="rentOut">—</div>
+      <p class="hint">茶饮店租金占比健康区间 10–15%，超过 20% 是红线。谈判前先算这一条。</p>
+    </div>
+    <div class="card">
+      <h2>决策口径</h2>
+      <p class="hint">总分 ≥ 80 可做；70–79 必须先谈下租金或拿到免租期；低于 70 放弃。硬门槛不过关的点位，无论总分多少都放弃。</p>
+    </div>
+  </section>
+
+  <section class="panel" id="p3">
+    <div class="card">
+      <h2>单店盈利测算（₸ / 月）</h2>
+      <div class="row">
+        <label class="fld"><span>客单价 ₸</span><input type="number" id="b_aov" value="2200" step="100"></label>
+        <label class="fld"><span>日均杯数</span><input type="number" id="b_cups" value="180" step="10"></label>
+        <label class="fld"><span>食材成本率 %</span><input type="number" id="b_food" value="32" step="1"></label>
+      </div>
+      <div class="row">
+        <label class="fld"><span>月租金 ₸</span><input type="number" id="b_rent" value="500000" step="50000"></label>
+        <label class="fld"><span>人力总成本 ₸</span><input type="number" id="b_labor" value="700000" step="50000"></label>
+        <label class="fld"><span>其他固定成本 ₸（水电网/耗材/软件）</span><input type="number" id="b_other" value="250000" step="25000"></label>
+      </div>
+      <div class="row">
+        <label class="fld"><span>商场抽成 %（街铺填 0）</span><input type="number" id="b_pct" value="0" step="1"></label>
+        <label class="fld"><span>外卖占比 %</span><input type="number" id="b_drate" value="25" step="5"></label>
+        <label class="fld"><span>外卖平台佣金 %</span><input type="number" id="b_dcomm" value="18" step="1"></label>
+      </div>
+      <div class="row">
+        <label class="fld"><span>一次性投入 ₸（装修+设备+首批货+押金）</span><input type="number" id="b_capex" value="18000000" step="500000"></label>
+        <label class="fld"><span>开业营销预算 ₸</span><input type="number" id="b_mkt" value="800000" step="100000"></label>
+      </div>
+      <div class="kpis" id="bOut"></div>
+      <p class="hint">净利率低于 12% 说明撑不住高端定位；回本周期目标 18 个月以内，超过 24 个月风险偏高。</p>
+      <button type="button" class="btn no-print" id="btnPrint3">打印 / 存 PDF</button>
+    </div>
+  </section>
+
+  <section class="panel" id="p4">
+    <div class="card"><h2>A. 硬件与工程（拍照留证）</h2><div id="chkA"></div></div>
+    <div class="card"><h2>B. 法律与合规（哈萨克斯坦）</h2><div id="chkB"></div>
+      <p class="hint">税率、增值税起征点、外国人开店的主体形式会直接影响定价，务必找本地注册会计师核实，不要照搬中国经验。</p>
+    </div>
+    <div class="card"><h2>C. 合同与谈判要点</h2><div id="chkC"></div></div>
+    <div class="card"><h2>D. 竞品调查（每家 30 分钟）</h2><div id="chkD"></div></div>
+    <div class="card">
+      <h2>E. 现场俄语问句（可直接念）</h2>
+      <pre class="script">【问房东 / 中介】
+Здравствуйте! Я хочу открыть чайную и рассматриваю это помещение.
+Какая арендная плата в месяц, какой депозит, и входят ли коммунальные платежи?
+Есть ли ограничения по ремонту и вывеске? Можно ли зарегистрировать ТОО по этому адресу?
+（您好，我想开一家茶饮店，正在看这个铺位。月租多少？押金多少？物业费包含吗？装修和门头有限制吗？可以用这个地址注册公司吗？）
+
+Есть ли другие арендаторы, которые продают чай или кофе? Есть ли эксклюзивность?
+（现在有没有其他租户也卖茶或咖啡？有没有排他条款？）
+
+Помещение отапливается? Какая мощность электричества? Есть ли вода и канализация?
+（有供暖吗？电容量多大？有上下水吗？）
+
+Почему предыдущий арендатор ушёл?
+（上一个租户为什么走了？）
+
+【问顾客（在竞品门口搭讪）】
+Как часто вы пьёте чай с молоком / bubble tea?（您多久喝一次奶茶？）
+Сколько вы готовы заплатить за один стакан?（一杯您愿意付多少钱？）
+Что для вас важнее: вкус, цена, скорость или атмосфера?（口味、价格、速度、环境，哪个更重要？）
+Что вы пьёте зимой?（冬天您喝什么？）
+
+【问隔壁商户】
+Какой поток здесь в будни и в выходные?
+Кто был здесь раньше и почему закрылся?
+（这里工作日和周末人流怎么样？之前这里是做什么的，为什么关掉了？）</pre>
+    </div>
+  </section>
+
+  <section class="panel" id="p5">
+    <div class="card"><h2>第一周行动清单</h2><div id="chkE"></div></div>
+    <div class="card">
+      <h2>考察记录格式（每个点位一份）</h2>
+      <pre class="script">点位编号 / 地址：
+测点时间与天气：
+高峰小时有效人流：           目标客群占比：
+左右两侧人流差异：           主要动线方向（去程/回程）：
+200 米内同类竞品数量与价格带：
+转化锚点（学校/写字楼/商场/影院/健身房）：
+可见性（30 米外能否看到门头、是否被遮挡）：
+月租金 / 押金 / 物业费 / 转让费：
+预估月营业额 / 租金占比：
+评分总分：                   结论：做 / 条件性做 / 放弃</pre>
+      <p class="hint">每个候选点位都留下当天的人流视频（手机连拍 60 秒）和 3 张照片，回到住处再数一遍，避免现场漏数。</p>
+    </div>
+  </section>
+
+  <footer>数据只保存在这台设备的浏览器里，换设备不会同步。</footer>
+</div>
+<script>
+(function(){
+  "use strict";
+
+  var CRIT = [
+    { k:'flow',   w:25, n:'有效人流强度', d:'高峰小时目标客群经过量，不是总人数' },
+    { k:'fit',    w:15, n:'客群匹配度',   d:'18–35 岁女性 / 白领 / 学生的占比' },
+    { k:'anchor', w:15, n:'锚点与停留',   d:'学校、写字楼、商场、影院、健身房带来的目的性客流' },
+    { k:'vis',    w:15, n:'可见性与动线', d:'30 米外能否看到门头、是否在回家或出站顺路一侧' },
+    { k:'comp',   w:10, n:'竞争强度',     d:'200 米内同类数量与价格带（越多越差，反向打分）' },
+    { k:'rent',   w:15, n:'租金性价比',   d:'租金占预估营业额的比例，越低分越高' },
+    { k:'hw',     w:5,  n:'硬件与合规',   d:'电容量、上下水、供暖、消防、门头审批' }
+  ];
+
+  var LIST = {
+    chkA: [
+      "三相电容量够不够（制冰机 + 冰箱 + 封口机 + 热水机同时开）",
+      "上下水位置与管径，能否装净水器",
+      "层高与门宽（设备进得去、门头做得起来）",
+      "供暖情况、门口是否积雪打滑、是否在风口",
+      "铺位是否临街可见，夜间灯光条件",
+      "手机信号与网络，能否装独立电表",
+      "消防出口、疏散通道、装修消防审批可行性",
+      "卫生间与员工储物空间",
+      "周边业态（美妆/健身房/影院加分，汽修/五金减分）",
+      "可疑之处：排水异味、渗水痕迹、楼上噪音源"
+    ],
+    chkB: [
+      "主体形式：ИП（个体户）还是 ТОО（有限公司），外国人能否注册 ИП",
+      "ИИН 与银行开户，是否需要 ВНЖ 或工作许可",
+      "税制：简化税制（SNR）的适用条件与税率",
+      "增值税：起征点与税率的最新规定（直接影响定价）",
+      "食品经营的许可/通知与卫生部门检查（СЭС）",
+      "员工医疗手册（медкнижка）、劳动合同与社保缴纳",
+      "进口原料的 EAEU 符合性声明（EAC）与俄语/哈萨克语标签",
+      "商标：品牌名与图形能否注册、是否已被抢注",
+      "财产险与第三方责任险",
+      "收银与税务系统：Kaspi 等本地支付接入、收据要求"
+    ],
+    chkC: [
+      "月租金、物业费、水电费分别由谁承担",
+      "押金月数、付款方式、是否需要个人担保",
+      "免租期（装修期）多长，是否有装修补贴",
+      "租期长度、续租条件与租金年涨幅约定",
+      "是否有转让费或上家装修补偿",
+      "商场抽成比例、广告位费、营业时间限制",
+      "同类业态排他条款（是否允许你卖茶饮）",
+      "装修审批流程与费用、门头审批（语言与尺寸规定）",
+      "客流不达预期时的降租或解约条款（写进合同）",
+      "违约与提前解约的赔偿方式"
+    ],
+    chkD: [
+      "早晚各 30 分钟数出杯人数（含外卖骑手取单）",
+      "价格带与杯型、菜单结构、主推产品",
+      "出杯速度、排队人数、座位占用率",
+      "外卖取餐方式与外卖柜情况",
+      "包装、杯型、视觉风格（你的差异化空间在哪）",
+      "2GIS 评分、评价总数、最近 3 个月新增评价数",
+      "差评主题（排队 / 口味 / 服务 / 价格）",
+      "营业时间与高峰时段",
+      "是否有促销活动与会员卡",
+      "估算：这家店一天卖多少杯？市场容量大概多少？"
+    ],
+    chkE: [
+      "D1：办本地手机号与流量卡，装 2GIS、Yandex Maps、Kaspi，把同类竞品标在地图上",
+      "D1：列出 8–10 个候选点位（含门牌号）与各自 200 米内的锚点",
+      "D2：每个候选点位做 1 段 15 分钟高峰采样，先淘汰明显不行的",
+      "D3：剩下的点位补测早晚两个时段，注意工作日与周末差异",
+      "D4：对 3–4 个存活点位做全天 4 时段完整计数 + 拍视频留证",
+      "D5：对 2–3 家最重要的竞品做 30 分钟出杯调查，并截图 2GIS 评价",
+      "D6：访谈 30 位顾客 + 3 位房东 + 3 位隔壁商户 + 2 家中介",
+      "D6：找 2 家本地会计师事务所问：税率、增值税、注册主体、社保成本",
+      "D7：用工具包打分 + 算单店模型，得出结论：做 / 条件性做 / 换点位",
+      "D7：把结论与原始数据（照片、视频、计数表）整理成一份 3 页文档"
+    ]
+  };
+
+  function $(id){ return document.getElementById(id); }
+  function num(v, d){ var n = parseFloat(v); return isNaN(n) ? (d || 0) : n; }
+  function fmt(n){ return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+  function pct(n){ return (Math.round(n * 10) / 10) + "%"; }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' })[c]; }); }
+
+  /* ---------- 选项卡 ---------- */
+  var tabs = document.querySelectorAll('#tabs button');
+  function showTab(id){
+    for (var j = 0; j < tabs.length; j++) {
+      tabs[j].classList.toggle('on', tabs[j].getAttribute('data-tab') === id);
+    }
+    var ps = document.querySelectorAll('section.panel');
+    for (var k = 0; k < ps.length; k++) { ps[k].classList.toggle('on', ps[k].id === id); }
+  }
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].addEventListener('click', function(){
+      showTab(this.getAttribute('data-tab'));
+      window.scrollTo(0, 0);
+    });
+  }
+
+  /* ---------- ① 计数器与计时 ---------- */
+  var eff = 0, all = 0, t0 = 0, tickId = null, samples = [];
+
+  function renderCount(){ $('cEff').textContent = eff; $('cAll').textContent = all; }
+  $('tapEff').addEventListener('click', function(){ eff++; renderCount(); });
+  $('tapAll').addEventListener('click', function(){ all++; renderCount(); });
+
+  function clockText(sec){
+    var m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+    return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+  }
+  function tick(){
+    if (!t0) { return; }
+    $('clock').textContent = clockText((Date.now() - t0) / 1000);
+  }
+  $('btnStart').addEventListener('click', function(){
+    if (tickId) { return; }
+    t0 = Date.now();
+    tickId = setInterval(tick, 250);
+    tick();
+  });
+  $('btnStop').addEventListener('click', function(){
+    if (tickId) { clearInterval(tickId); tickId = null; }
+    if (t0) {
+      var sec = (Date.now() - t0) / 1000;
+      if (sec > 3) { $('mins').value = Math.round(sec / 60 * 10) / 10; }
+    }
+    updateAll();
+  });
+  $('btnReset').addEventListener('click', function(){
+    if (tickId) { clearInterval(tickId); tickId = null; }
+    eff = 0; all = 0; t0 = 0;
+    renderCount();
+    $('clock').textContent = "00:00";
+  });
+
+  function bandHours(h){
+    if (h >= 8  && h < 10) { return 2; }
+    if (h >= 10 && h < 12) { return 2; }
+    if (h >= 12 && h < 14) { return 2; }
+    if (h >= 14 && h < 17) { return 3; }
+    if (h >= 17 && h < 20) { return 3; }
+    if (h >= 20 && h < 22) { return 2; }
+    return 1;
+  }
+
+  $('btnSave').addEventListener('click', function(){
+    var mins = num($('mins').value, 0);
+    if (mins <= 0) { alert('请先填写本段时长（分钟），或用计时器计时。'); return; }
+    if (eff + all === 0) { alert('这一段还没有计数。'); return; }
+    var d = new Date();
+    samples.push({
+      clock: (d.getHours() < 10 ? "0" : "") + d.getHours() + ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes(),
+      hour: d.getHours(),
+      mins: mins,
+      eff: eff,
+      all: all,
+      note: $('slotNote').value
+    });
+    eff = 0; all = 0; t0 = 0;
+    renderCount();
+    $('slotNote').value = "";
+    $('clock').textContent = "00:00";
+    renderSamples();
+    updateAll();
+  });
+
+  function renderSamples(){
+    var tb = $('tbody');
+    if (!samples.length) {
+      tb.innerHTML = '<tr><td colspan="6" style="color:var(--ink-2)">还没有样本</td></tr>';
+      return;
+    }
+    var html = "";
+    for (var i = 0; i < samples.length; i++) {
+      var s = samples[i];
+      var perHour = s.mins > 0 ? Math.round(s.eff / s.mins * 60) : 0;
+      html += "<tr><td>" + s.clock + (s.note ? "<br><span style='color:var(--ink-2);font-size:11.5px'>" + esc(s.note) + "</span>" : "") +
+              "</td><td>" + s.mins + "分</td><td><b>" + s.eff + "</b></td><td>" + s.all +
+              "</td><td>" + perHour + "</td>" +
+              '<td><button type="button" class="del" data-i="' + i + '">删除</button></td></tr>';
+    }
+    tb.innerHTML = html;
+    var del = tb.querySelectorAll('.del');
+    for (var j = 0; j < del.length; j++) {
+      del[j].addEventListener('click', function(){
+        samples.splice(parseInt(this.getAttribute('data-i'), 10), 1);
+        renderSamples();
+        updateAll();
+      });
+    }
+  }
+
+  function computeFoot(){
+    var peak = 0, day = 0;
+    for (var i = 0; i < samples.length; i++) {
+      var s = samples[i];
+      var perHour = s.mins > 0 ? s.eff / s.mins * 60 : 0;
+      if (perHour > peak) { peak = perHour; }
+      day += perHour * bandHours(s.hour);
+    }
+    return { peak: peak, day: day };
+  }
+
+  /* ---------- ② 评分卡 ---------- */
+  (function buildCrits(){
+    var html = "";
+    for (var i = 0; i < CRIT.length; i++) {
+      html += '<div class="crit">' +
+        '<div class="nm">' + CRIT[i].n + ' <span class="tag">' + CRIT[i].w + '%</span><i>' + CRIT[i].d + '</i></div>' +
+        '<input type="range" min="0" max="10" step="1" value="5" id="c_' + CRIT[i].k + '">' +
+        '<div class="val" id="v_' + CRIT[i].k + '">5</div></div>';
+    }
+    $('crits').innerHTML = html;
+    for (var j = 0; j < CRIT.length; j++) {
+      (function(c){
+        var el = $('c_' + c.k);
+        el.addEventListener('input', function(){
+          $('v_' + c.k).textContent = this.value;
+          updateScore();
+          save();
+        });
+      })(CRIT[j]);
+    }
+  })();
+
+  function updateScore(){
+    var total = 0;
+    for (var i = 0; i < CRIT.length; i++) {
+      total += num($('c_' + CRIT[i].k).value, 0) / 10 * CRIT[i].w;
+    }
+    var el = $('scoreOut'), txt, cls;
+    if (total >= 80)      { txt = "总分 " + total.toFixed(1) + " / 100 —— 可以做，进入租金与合同谈判。"; cls = "ok"; }
+    else if (total >= 70) { txt = "总分 " + total.toFixed(1) + " / 100 —— 条件性可行：必须谈下租金、免租期或装修补贴再签。"; cls = "warn"; }
+    else                  { txt = "总分 " + total.toFixed(1) + " / 100 —— 建议放弃，继续看别的点位。"; cls = "bad"; }
+    el.className = "verdict " + cls;
+    el.textContent = txt;
+
+    var r = num($('rentM').value, 0), rev = num($('revM').value, 0);
+    var ro = $('rentOut');
+    if (rev <= 0) { ro.className = "verdict"; ro.textContent = "先填入预估月营业额。"; return; }
+    var ratio = r / rev * 100, t, c2;
+    if (ratio <= 15)      { t = "租金占比 " + ratio.toFixed(1) + "% —— 健康区间（10–15%），模型有利润空间。"; c2 = "ok"; }
+    else if (ratio <= 20) { t = "租金占比 " + ratio.toFixed(1) + "% —— 偏高，需要靠客流和客单价把营业额再抬一成，否则净利被压掉。"; c2 = "warn"; }
+    else                  { t = "租金占比 " + ratio.toFixed(1) + "% —— 已过 20% 红线，直接放弃或重新谈价。"; c2 = "bad"; }
+    ro.className = "verdict " + c2;
+    ro.textContent = t;
+  }
+
+  /* ---------- ③ 盈利测算 ---------- */
+  function kpi(label, value, strong){
+    return '<div class="kpi"><span>' + label + '</span><b' +
+      (strong ? ' style="color:var(--brand)"' : '') + '>' + value + '</b></div>';
+  }
+
+  function updateBiz(){
+    var aov   = num($('b_aov').value, 0);
+    var cups  = num($('b_cups').value, 0);
+    var food  = num($('b_food').value, 0) / 100;
+    var rent  = num($('b_rent').value, 0);
+    var labor = num($('b_labor').value, 0);
+    var other = num($('b_other').value, 0);
+    var pc    = num($('b_pct').value, 0) / 100;
+    var dr    = num($('b_drate').value, 0) / 100;
+    var dc    = num($('b_dcomm').value, 0) / 100;
+    var capex = num($('b_capex').value, 0) + num($('b_mkt').value, 0);
+
+    var rev    = cups * aov * 30;
+    var gross  = rev * (1 - food);
+    var plat   = rev * dr * dc;
+    var turn   = rev * pc;
+    var fix    = rent + labor + other;
+    var profit = gross - plat - turn - fix;
+
+    var unit = aov * (1 - food - dr * dc - pc);
+    var be   = unit > 0 ? fix / (unit * 30) : Infinity;
+    var pb   = profit > 0 ? capex / profit : Infinity;
+
+    var html = "";
+    html += kpi("月营业额", fmt(rev));
+    html += kpi("毛利率", pct((1 - food) * 100));
+    html += kpi("月净利", fmt(profit), true);
+    html += kpi("净利率", rev > 0 ? pct(profit / rev * 100) : "—");
+    html += kpi("盈亏平衡日杯数", isFinite(be) ? Math.ceil(be) : "—");
+    html += kpi("回本周期", isFinite(pb) && pb > 0 ? (Math.round(pb * 10) / 10) + " 个月" : "—");
+    html += kpi("租金占比", rev > 0 ? pct(rent / rev * 100) : "—");
+    html += kpi("每杯贡献利润 ₸", fmt(unit));
+    $('bOut').innerHTML = html;
+  }
+
+  /* ---------- ④ 清单 ---------- */
+  (function buildLists(){
+    for (var key in LIST) {
+      if (!LIST.hasOwnProperty(key)) { continue; }
+      var box = $(key);
+      if (!box) { continue; }
+      var html = "";
+      for (var i = 0; i < LIST[key].length; i++) {
+        var id = key + "_" + i;
+        html += '<label class="chk" for="' + id + '"><input type="checkbox" id="' + id + '"><span>' + LIST[key][i] + '</span></label>';
+      }
+      box.innerHTML = html;
+    }
+    var boxes = document.querySelectorAll('.chk input');
+    for (var b = 0; b < boxes.length; b++) { boxes[b].addEventListener('change', save); }
+  })();
+
+  function updateAll(){
+    var f = computeFoot();
+    var cv = num($('cv').value, 0) / 100;
+    var aov = num($('aov').value, 0);
+    var dlv = num($('dlv').value, 0) / 100;
+    var cups = f.day * cv * (1 + dlv);
+    $('kPeak').textContent = f.peak ? Math.round(f.peak) : "—";
+    $('kDay').textContent  = f.day ? Math.round(f.day) : "—";
+    $('kCups').textContent = f.day ? Math.round(cups) : "—";
+    $('kRev').textContent  = f.day ? fmt(cups * aov * 30) : "—";
+    updateScore();
+    updateBiz();
+    save();
+  }
+
+  var inputs = document.querySelectorAll('input');
+  for (var q = 0; q < inputs.length; q++) {
+    inputs[q].addEventListener('input', updateAll);
+    inputs[q].addEventListener('change', updateAll);
+  }
+
+  /* ---------- 打印 ---------- */
+  function printAll(){
+    var ps = document.querySelectorAll('section.panel'), prev = [];
+    for (var i = 0; i < ps.length; i++) {
+      prev.push(ps[i].classList.contains('on'));
+      ps[i].classList.add('on');
+    }
+    window.print();
+    for (var j = 0; j < ps.length; j++) { ps[j].classList.toggle('on', prev[j]); }
+  }
+  $('btnPrint1').addEventListener('click', printAll);
+  $('btnPrint3').addEventListener('click', printAll);
+
+  /* ---------- 本地保存 ---------- */
+  var KEY = "almaty_tea_kit_v1";
+  function save(){
+    try {
+      var data = { fields: {}, checks: {} };
+      var ins = document.querySelectorAll('input');
+      for (var i = 0; i < ins.length; i++) {
+        var el = ins[i];
+        if (!el.id) { continue; }
+        if (el.type === 'checkbox') { data.checks[el.id] = el.checked ? 1 : 0; }
+        else { data.fields[el.id] = el.value; }
+      }
+      localStorage.setItem(KEY, JSON.stringify(data));
+    } catch (e) { /* 隐私模式或本地文件限制，忽略即可 */ }
+  }
+  function load(){
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); } catch (e) { return; }
+    if (!raw) { return; }
+    var data = null;
+    try { data = JSON.parse(raw); } catch (e) { return; }
+    if (data && data.fields) {
+      for (var id in data.fields) {
+        if (!data.fields.hasOwnProperty(id)) { continue; }
+        var el = $(id);
+        if (el && el.type !== 'checkbox') { el.value = data.fields[id]; }
+      }
+    }
+    if (data && data.checks) {
+      for (var cid in data.checks) {
+        if (!data.checks.hasOwnProperty(cid)) { continue; }
+        var cb = $(cid);
+        if (cb) { cb.checked = !!data.checks[cid]; }
+      }
+    }
+    for (var i = 0; i < CRIT.length; i++) {
+      var r = $('c_' + CRIT[i].k);
+      if (r) { $('v_' + CRIT[i].k).textContent = r.value; }
+    }
+  }
+
+  renderCount();
+  renderSamples();
+  load();
+  updateAll();
+})();
+</script>
+</body>
+</html>
