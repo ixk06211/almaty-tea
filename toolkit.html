@@ -156,7 +156,7 @@
       <span class="mark" aria-hidden="true">茶</span>
       <div class="bt">
         <h1>阿拉木图 · 奶茶店选址调研工具包</h1>
-        <p class="sub">版本 v1.6 · 离线可用，建议加到手机主屏</p>
+        <p class="sub">版本 v1.7 · 离线可用，建议加到手机主屏</p>
       </div>
       <span class="sitechip" id="siteChip" title="当前点位">—</span>
     </div>
@@ -316,7 +316,7 @@
     </div>
   </section>
 
-  <footer>数据只保存在这台设备的浏览器里，换设备不会同步 · 版本 v1.6</footer>
+  <footer>数据先存在这台设备，有网时自动同步到云端 Google 表格 · 版本 v1.7</footer>
 </div>
 <script>
 (function(){
@@ -324,17 +324,16 @@
 
   /* ============================================================
      云端同步配置
-     等 Google 表格部署好之后，只要改下面几行：
-       mode 改成 "gas"（Google 表格）或 "rest"（Supabase 等 REST 接口）
-       url  填部署得到的网址
-       token 填和云端脚本里一致的约定口令
-     现在保持 "off"：数据只存本机，用「导出数据」手动备份。
+     mode  "gas" = Google 表格（Apps Script 网络应用）
+     url   部署得到的 /exec 网址
+     token 与脚本里的 TOKEN 一致
+     如果哪天要停用云端，把 mode 改回 "off" 即可（记录仍然存在本机）。
      ============================================================ */
   var CLOUD = {
-    mode: "off",
-    url: "",
+    mode: "gas",
+    url: "https://script.google.com/macros/s/AKfycbzDZLEOvhnxW7Pbj5aWL1AmZiQ8FYoK-H4J1T62M083OkvqFLgq04URFkOVfRoN6J1h/exec",
     key: "",
-    token: ""
+    token: "almaty2026"
   };
 
   var CRIT = [
